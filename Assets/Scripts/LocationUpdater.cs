@@ -24,7 +24,7 @@ public class LocationUpdater : MonoBehaviour
     {
         if ((DateTime.Now - timestamp).Seconds > UpdateInterval)
         {
-            Vector2 loc = Provider.GetLocation();
+            Vector3 loc = Provider.GetLocation();
             Map.Center = new LatLon(loc.x, loc.y);
             timestamp = DateTime.Now;
         }
