@@ -8,6 +8,7 @@ using UnityEngine.EventSystems;
 public class InputHandler : MonoBehaviour
 {
     public MapRenderer Map;
+    public float zoomModifier = 1;
 
     // Start is called before the first frame update
     void Start()
@@ -40,6 +41,8 @@ public class InputHandler : MonoBehaviour
                             float a = Vector2.Distance(Input.touches[0].position, Input.touches[1].position);
                             float b = Vector2.Distance(Input.touches[0].position + Input.touches[0].deltaPosition, Input.touches[1].position + Input.touches[1].deltaPosition);
                             float delta = a / b;
+                            delta = ((delta-1)*zoomModifier)+1;
+                            GameObject.Find("Canvas/DebugUI").GetComponent<DebugMode>().LogMessage("ABC: "+delta);
                             Map.ZoomLevel /= delta;
                         }
                     }
