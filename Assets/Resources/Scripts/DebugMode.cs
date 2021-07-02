@@ -21,5 +21,6 @@ public class DebugMode : MonoBehaviour
     public void LogMessage(string message)
     {
         transform.Find("Debug Text").GetComponent<TextMeshProUGUI>().text = message + "\n" + transform.Find("Debug Text").GetComponent<TextMeshProUGUI>().text;
+        Debug.Log(message);
     }
 }
