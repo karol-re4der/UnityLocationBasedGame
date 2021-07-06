@@ -9,13 +9,23 @@ using UnityEngine.EventSystems;
 public class InputHandler : MonoBehaviour
 {
     public MapRenderer Map;
+
+    #region transitions
+    private Vector3 targetPos;
+    private float targetZoom;
+    public float transitionRate = 0.01f;
+    #endregion
+
+    #region dragin and zooming
     public float zoomModifier = 1;
     private Vector3 dragPivot;
     public Vector3 shift;
+    #endregion
 
+    #region double tap detection
     private DateTime lastTap = DateTime.MinValue;
     public float doubleTapWait = 0.5f;
-
+    #endregion
     // Start is called before the first frame update
     void Start()
     {
@@ -61,7 +71,7 @@ public class InputHandler : MonoBehaviour
 
                             if (DateTime.Now - lastTap < TimeSpan.FromSeconds(doubleTapWait))
                             {
-                                CenterCamera();
+                                CenterCamera(Globals.GetMap().transform.position, instant:false);
                             }
                             lastTap = DateTime.Now;
                         }
@@ -72,12 +82,17 @@ public class InputHandler : MonoBehaviour
                     }
                 }
                 FixBounds();
+                SaveShift();
             }
-
-            shift = Globals.GetMap().transform.position - Camera.main.transform.position;
         }
         else
         {
+            //Special
+            if (Input.GetKeyDown("space"))
+            {
+                CenterCamera(Globals.GetMap().transform.position, instant: false);
+            }
+
             //Move camera
             transform.Translate(Vector3.right * Input.GetAxis("Horizontal") * 5 * Time.deltaTime + Vector3.up * Input.GetAxis("Vertical") * 5 * Time.deltaTime);
             shift = Globals.GetMap().transform.position - Camera.main.transform.position;
@@ -93,12 +108,44 @@ public class InputHandler : MonoBehaviour
             }
 
             FixBounds();
+            SaveShift();
         }
     }
 
-    public void CenterCamera()
+    public void CenterCamera(Vector3 newPos, float targetZoom = 3, bool instant = true)
     {
-        Globals.GetDebugConsole().LogMessage("Pos centered!");
+        CancelInvoke();
+        if (instant)
+        {
+            transform.position = new Vector3(newPos.x, transform.position.y, newPos.z);
+            //Camera.main.orthographicSize = targetZoom;
+        }
+        else
+        {
+            targetPos = newPos;
+            this.targetZoom = targetZoom;
+            InvokeRepeating("Transition", 0, transitionRate);
+        }
+    }
+    private void Transition()
+    {
+        if (Vector2.Distance(transform.position, targetPos) >= transitionRate)
+        {
+            float y = transform.position.y;
+            transform.position = Vector3.Lerp(transform.position, targetPos, transitionRate * 10);
+            transform.position = new Vector3(transform.position.x, y, transform.position.z);
+        }
+        /*if (Mathf.Abs(GetComponent<Camera>().orthographicSize - targetZoom) >= transitionRate)
+        {
+            Camera.main.orthographicSize = Mathf.Lerp(Camera.main.orthographicSize, targetZoom, transitionRate * 10);
+        }*/
+
+        SaveShift();
+        if (Vector2.Distance(new Vector2(transform.position.x, transform.position.z), new Vector2(targetPos.x, targetPos.z)) < transitionRate/* && Mathf.Abs(GetComponent<Camera>().orthographicSize - targetZoom) < transitionRate*/)
+        {
+            CancelInvoke();
+        }
+
     }
 
     private void SavePivot(Vector2 pivot)
@@ -106,8 +153,14 @@ public class InputHandler : MonoBehaviour
         dragPivot = Camera.main.ScreenToWorldPoint(pivot);
     }
 
+    private void SaveShift()
+    {
+        shift = Globals.GetMap().transform.position - Camera.main.transform.position;
+    }
+
     private void DragTo(Vector2 touch)
     {
+        CancelInvoke();
         Vector3 currentPos = new Vector3(touch.x, touch.y, 0);
         currentPos = Camera.main.ScreenToWorldPoint(currentPos);
         Vector3 offset = dragPivot - currentPos;
