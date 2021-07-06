@@ -1,0 +1,16 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public static class Globals
+{
+    public static GameObject GetMap()
+    {
+        return GameObject.Find("Gameplay Space/Map");
+    }
+
+    public static DebugMode GetDebugConsole()
+    {
+        return GameObject.Find("Canvas/DebugUI").GetComponent<DebugMode>();
+    }
+}

@@ -24,5 +24,7 @@ public class MapScaler : MonoBehaviour
         float ratio =1f/((float)Screen.height / Screen.width);
         float shortSide = baseSize * ratio;
         gameObject.GetComponent<MapRenderer>().LocalMapDimension = new Vector2(shortSide, baseSize);
+
+        Camera.main.orthographicSize = 0.5f;
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Microsoft.Maps.Unity;
@@ -10,6 +11,10 @@ public class InputHandler : MonoBehaviour
     public MapRenderer Map;
     public float zoomModifier = 1;
     private Vector3 dragPivot;
+    public Vector3 shift;
+
+    private DateTime lastTap = DateTime.MinValue;
+    public float doubleTapWait = 0.5f;
 
     // Start is called before the first frame update
     void Start()
@@ -53,6 +58,12 @@ public class InputHandler : MonoBehaviour
                         if (Input.touches[0].phase == TouchPhase.Began)
                         {
                             SavePivot(Input.touches[0].position);
+
+                            if (DateTime.Now - lastTap < TimeSpan.FromSeconds(doubleTapWait))
+                            {
+                                CenterCamera();
+                            }
+                            lastTap = DateTime.Now;
                         }
                         else if (Input.touches[0].phase == TouchPhase.Moved)
                         {
@@ -60,12 +71,16 @@ public class InputHandler : MonoBehaviour
                         }
                     }
                 }
+                FixBounds();
             }
+
+            shift = Globals.GetMap().transform.position - Camera.main.transform.position;
         }
         else
         {
             //Move camera
-            transform.Translate(Vector3.left * Input.GetAxis("Horizontal") * 5 * Time.deltaTime + Vector3.back * Input.GetAxis("Vertical") * 5 * Time.deltaTime);
+            transform.Translate(Vector3.right * Input.GetAxis("Horizontal") * 5 * Time.deltaTime + Vector3.up * Input.GetAxis("Vertical") * 5 * Time.deltaTime);
+            shift = Globals.GetMap().transform.position - Camera.main.transform.position;
 
             //Zoom camera
             if (Input.GetKeyDown(KeyCode.KeypadMinus))
@@ -76,7 +91,14 @@ public class InputHandler : MonoBehaviour
             {
                 Map.ZoomLevel *= 0.95f;
             }
+
+            FixBounds();
         }
+    }
+
+    public void CenterCamera()
+    {
+        Globals.GetDebugConsole().LogMessage("Pos centered!");
     }
 
     private void SavePivot(Vector2 pivot)
@@ -90,8 +112,31 @@ public class InputHandler : MonoBehaviour
         currentPos = Camera.main.ScreenToWorldPoint(currentPos);
         Vector3 offset = dragPivot - currentPos;
         transform.position = transform.position + offset;
-        GameObject.Find("Canvas/DebugUI").GetComponent<DebugMode>().LogMessage("Pos: " + transform.position);
-
+        Globals.GetDebugConsole().LogMessage("Pos: " + transform.position);
     }
 
+    private void FixBounds()
+    {
+        float xMaxBound = Globals.GetMap().transform.position.x + Globals.GetMap().GetComponent<Collider>().bounds.extents.x / 2;
+        float xMinBound = Globals.GetMap().transform.position.x - Globals.GetMap().GetComponent<Collider>().bounds.extents.x / 2;
+        float zMaxBound = Globals.GetMap().transform.position.z + Globals.GetMap().GetComponent<Collider>().bounds.extents.z / 2;
+        float zMinBound = Globals.GetMap().transform.position.z - Globals.GetMap().GetComponent<Collider>().bounds.extents.z / 2;
+
+        if (transform.position.x < xMinBound)
+        {
+            transform.position = new Vector3(xMinBound, transform.position.y, transform.position.z);
+        }
+        else if (transform.position.x > xMaxBound)
+        {
+            transform.position = new Vector3(xMaxBound, transform.position.y, transform.position.z);
+        }
+        if (transform.position.z < zMinBound)
+        {
+            transform.position = new Vector3(transform.position.x, transform.position.y, zMinBound);
+        }
+        else if (transform.position.z > zMaxBound)
+        {
+            transform.position = new Vector3(transform.position.x, transform.position.y, zMaxBound);
+        }
+    }
 }
