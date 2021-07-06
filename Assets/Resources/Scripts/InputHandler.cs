@@ -19,7 +19,7 @@ public class InputHandler : MonoBehaviour
     #region dragin and zooming
     public float zoomModifier = 1;
     private Vector3 dragPivot;
-    public Vector3 shift;
+    private float preferredZoomLevel;
     #endregion
 
     #region double tap detection
@@ -29,7 +29,7 @@ public class InputHandler : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+        preferredZoomLevel = (Globals.GetMap().GetComponent<MapRendererBase>().MaximumZoomLevel+ Globals.GetMap().GetComponent<MapRendererBase>().MinimumZoomLevel) / 2;
     }
 
     // Update is called once per frame
@@ -71,7 +71,7 @@ public class InputHandler : MonoBehaviour
 
                             if (DateTime.Now - lastTap < TimeSpan.FromSeconds(doubleTapWait))
                             {
-                                CenterCamera(Globals.GetMap().transform.position, instant:false);
+                                CenterCamera(Globals.GetMap().transform.position, preferredZoomLevel, instant:false);
                             }
                             lastTap = DateTime.Now;
                         }
@@ -82,7 +82,6 @@ public class InputHandler : MonoBehaviour
                     }
                 }
                 FixBounds();
-                SaveShift();
             }
         }
         else
@@ -90,12 +89,11 @@ public class InputHandler : MonoBehaviour
             //Special
             if (Input.GetKeyDown("space"))
             {
-                CenterCamera(Globals.GetMap().transform.position, instant: false);
+                CenterCamera(Globals.GetMap().transform.position, preferredZoomLevel, instant: false);
             }
 
             //Move camera
             transform.Translate(Vector3.right * Input.GetAxis("Horizontal") * 5 * Time.deltaTime + Vector3.up * Input.GetAxis("Vertical") * 5 * Time.deltaTime);
-            shift = Globals.GetMap().transform.position - Camera.main.transform.position;
 
             //Zoom camera
             if (Input.GetKeyDown(KeyCode.KeypadMinus))
@@ -108,21 +106,28 @@ public class InputHandler : MonoBehaviour
             }
 
             FixBounds();
-            SaveShift();
         }
     }
 
-    public void CenterCamera(Vector3 newPos, float targetZoom = 3, bool instant = true)
+    public void CenterCamera(Vector3 newPos, float targetZoom, bool instant = true)
     {
         CancelInvoke();
         if (instant)
         {
             transform.position = new Vector3(newPos.x, transform.position.y, newPos.z);
-            //Camera.main.orthographicSize = targetZoom;
+            Globals.GetMap().GetComponent<MapRendererBase>().ZoomLevel = targetZoom;
         }
         else
         {
             targetPos = newPos;
+            if(targetZoom > Globals.GetMap().GetComponent<MapRendererBase>().MaximumZoomLevel)
+            {
+                targetZoom = Globals.GetMap().GetComponent<MapRendererBase>().MinimumZoomLevel;
+            }
+            else if (targetZoom < Globals.GetMap().GetComponent<MapRendererBase>().MinimumZoomLevel)
+            {
+                targetZoom = Globals.GetMap().GetComponent<MapRendererBase>().MinimumZoomLevel;
+            }
             this.targetZoom = targetZoom;
             InvokeRepeating("Transition", 0, transitionRate);
         }
@@ -135,14 +140,15 @@ public class InputHandler : MonoBehaviour
             transform.position = Vector3.Lerp(transform.position, targetPos, transitionRate * 10);
             transform.position = new Vector3(transform.position.x, y, transform.position.z);
         }
-        /*if (Mathf.Abs(GetComponent<Camera>().orthographicSize - targetZoom) >= transitionRate)
+        if (Mathf.Abs(Globals.GetMap().GetComponent<MapRendererBase>().ZoomLevel - targetZoom) >= transitionRate)
         {
-            Camera.main.orthographicSize = Mathf.Lerp(Camera.main.orthographicSize, targetZoom, transitionRate * 10);
-        }*/
+            Globals.GetMap().GetComponent<MapRendererBase>().ZoomLevel = Mathf.Lerp(Globals.GetMap().GetComponent<MapRendererBase>().ZoomLevel, targetZoom, transitionRate * 10);
+        }
 
-        SaveShift();
-        if (Vector2.Distance(new Vector2(transform.position.x, transform.position.z), new Vector2(targetPos.x, targetPos.z)) < transitionRate/* && Mathf.Abs(GetComponent<Camera>().orthographicSize - targetZoom) < transitionRate*/)
+        if (Vector2.Distance(new Vector2(transform.position.x, transform.position.z), new Vector2(targetPos.x, targetPos.z)) < transitionRate && Mathf.Abs(Globals.GetMap().GetComponent<MapRendererBase>().ZoomLevel - targetZoom) < transitionRate)
         {
+            transform.position = new Vector3(targetPos.x, transform.position.y ,targetPos.z);
+            Globals.GetMap().GetComponent<MapRendererBase>().ZoomLevel = targetZoom;
             CancelInvoke();
         }
 
@@ -151,11 +157,6 @@ public class InputHandler : MonoBehaviour
     private void SavePivot(Vector2 pivot)
     {
         dragPivot = Camera.main.ScreenToWorldPoint(pivot);
-    }
-
-    private void SaveShift()
-    {
-        shift = Globals.GetMap().transform.position - Camera.main.transform.position;
     }
 
     private void DragTo(Vector2 touch)

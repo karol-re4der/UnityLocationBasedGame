@@ -13,4 +13,9 @@ public static class Globals
     {
         return GameObject.Find("Canvas/DebugUI").GetComponent<DebugMode>();
     }
+
+    public static InputHandler GetInput()
+    {
+        return Camera.main.GetComponent<InputHandler>();
+    }
 }
