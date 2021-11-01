@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
@@ -20,7 +21,14 @@ public class DebugMode : MonoBehaviour
 
     public void LogMessage(string message)
     {
-        transform.Find("Debug Text").GetComponent<TextMeshProUGUI>().text = message + "\n" + transform.Find("Debug Text").GetComponent<TextMeshProUGUI>().text;
+        try
+        {
+            transform.Find("Debug Text").GetComponent<TextMeshProUGUI>().text = message + "\n" + transform.Find("Debug Text").GetComponent<TextMeshProUGUI>().text;
+        }
+        catch(NullReferenceException ex)
+        {
+
+        }
         Debug.Log(message);
     }
 }
