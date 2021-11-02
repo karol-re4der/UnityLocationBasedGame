@@ -5,10 +5,10 @@ using UnityEngine.UI;
 
 public class SubMenu : MonoBehaviour
 {
-    private float target;
-    private Transform fade;
-    private GameObject content;
-    private bool raycastBlock;
+    protected float target;
+    protected Transform fade;
+    protected GameObject content;
+    protected bool raycastBlock;
 
     public bool startsActive = false;
 
