@@ -5,6 +5,8 @@ using Mirror;
 
 public static class Globals
 {
+    public static string ServerAddress = "89.64.59.190";
+    public static ushort NetworkingPort = 7777;
     public static bool IsHost = false;
     public static string SqliteConnectionString = "URI=file:" + Application.persistentDataPath + "/database.db";
 

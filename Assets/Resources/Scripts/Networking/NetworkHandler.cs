@@ -2,19 +2,22 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Mirror;
+using kcp2k;
 using System;
 
 public class NetworkHandler : NetworkManager
 {
     void Start()
     {
+        gameObject.GetComponent<KcpTransport>().Port = Globals.NetworkingPort;
         if (Globals.IsHost)
         {
-            Globals.GetNetworkManager().StartServer();
+            StartServer();
         }
         else
         {
-            Globals.GetNetworkManager().StartClient();
+            networkAddress = Globals.ServerAddress;
+            StartClient();
         }
     }
 
