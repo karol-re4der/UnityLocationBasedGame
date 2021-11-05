@@ -4,6 +4,8 @@ using UnityEngine;
 
 public static class Globals
 {
+    public static bool IsHost = false;
+
     public static GameObject GetMap()
     {
         return GameObject.Find("Gameplay Space/Map");

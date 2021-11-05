@@ -10,7 +10,6 @@ public class DebugMode : MonoBehaviour
     void Start()
     {
         gameObject.SetActive(Debug.isDebugBuild);
-        LogMessage("Running in debug mode");
     }
 
     // Update is called once per frame

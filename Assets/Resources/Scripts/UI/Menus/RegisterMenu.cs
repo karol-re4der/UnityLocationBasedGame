@@ -39,7 +39,7 @@ public class RegisterMenu : SubMenu
         }
         else
         {
-            SceneManager.LoadScene("GameScene");
+            GameObject.Find("StartupManager").GetComponent<StartupManager>().RunAsClient();
         }
     }
 

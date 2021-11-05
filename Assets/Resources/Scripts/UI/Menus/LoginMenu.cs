@@ -11,6 +11,12 @@ public class LoginMenu : SubMenu
 
     public void Button_Login()
     {
+        //Temporary
+        GameObject.Find("StartupManager").GetComponent<StartupManager>().RunAsClient();
+        return;
+        //end of temporary
+
+
         //Load login form data
         String login = content.transform.Find("Login Field").GetComponent<TMP_InputField>().text;
         String password = content.transform.Find("Password Field").GetComponent<TMP_InputField>().text;
@@ -26,7 +32,7 @@ public class LoginMenu : SubMenu
         }
         else
         {
-            SceneManager.LoadScene("GameScene");
+            GameObject.Find("StartupManager").GetComponent<StartupManager>().RunAsClient();
         }
     }
 
