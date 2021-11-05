@@ -6,10 +6,16 @@ using Mirror;
 public static class Globals
 {
     public static bool IsHost = false;
+    public static string SqliteConnectionString = "URI=file:" + Application.persistentDataPath + "/database.db";
 
     public static NetworkManager GetNetworkManager()
     {
         return GameObject.Find("Networking").GetComponent<NetworkHandler>();
+    }
+
+    public static DatabaseConnector GetDatabaseConnector()
+    {
+        return GameObject.Find("Networking").GetComponent<DatabaseConnector>();
     }
 
     public static GameObject GetMap()

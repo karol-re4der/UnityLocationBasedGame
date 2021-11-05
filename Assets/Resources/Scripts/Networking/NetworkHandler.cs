@@ -6,7 +6,7 @@ using System;
 
 public class NetworkHandler : NetworkManager
 {
-    void Awake()
+    void Start()
     {
         if (Globals.IsHost)
         {
@@ -48,25 +48,31 @@ public class NetworkHandler : NetworkManager
     public override void OnStartServer()
     {
         Globals.GetDebugConsole().LogMessage("Server started");
+        Globals.GetDatabaseConnector().LogInDatabase("ServerStart", "Server was started");
     }
 
     public override void OnStopServer()
     {
         Globals.GetDebugConsole().LogMessage("Server stopped");
+        Globals.GetDatabaseConnector().LogInDatabase("ServerStop", "Server was stopped");
     }
 
     public override void OnServerConnect(NetworkConnection conn)
     {
-        Globals.GetDebugConsole().LogMessage("Client "+conn.connectionId+" connected from ip "+conn.address);
+        string messageText = "Client " + conn.connectionId + " connected from ip " + conn.address;
+        Globals.GetDebugConsole().LogMessage(messageText);
+        Globals.GetDatabaseConnector().LogInDatabase("Traffic", messageText);
     }
 
     public override void OnServerDisconnect(NetworkConnection conn)
     {
-        Globals.GetDebugConsole().LogMessage("Client " + conn.connectionId + " disconnected");
+        string messageText = "Client " + conn.connectionId + " disconnected";
+        Globals.GetDebugConsole().LogMessage(messageText);
+        Globals.GetDatabaseConnector().LogInDatabase("Traffic", messageText);
     }
 
     public override void OnServerError(NetworkConnection conn, Exception exception)
     {
-        Globals.GetDebugConsole().LogMessage("Server error " + exception.Message);
+        Globals.GetDebugConsole().LogMessage("ServerErr" + exception.Message);
     }
 }
