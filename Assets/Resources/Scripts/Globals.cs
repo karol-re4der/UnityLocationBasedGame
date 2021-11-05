@@ -1,10 +1,16 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Mirror;
 
 public static class Globals
 {
     public static bool IsHost = false;
+
+    public static NetworkManager GetNetworkManager()
+    {
+        return GameObject.Find("Networking").GetComponent<NetworkHandler>();
+    }
 
     public static GameObject GetMap()
     {
