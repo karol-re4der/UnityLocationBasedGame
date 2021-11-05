@@ -31,7 +31,7 @@ public class DatabaseConnector : MonoBehaviour
         }
         else
         {
-            gameObject.SetActive(false);
+            this.enabled = false;
         }
     }
 
