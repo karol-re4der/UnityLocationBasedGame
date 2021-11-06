@@ -11,7 +11,7 @@ public class DatabaseConnector : MonoBehaviour
     private IDbConnection dbcon;
 
 
-    void Awake()
+    public void ConnectToDatabase()
     {
         if (Globals.IsHost)
         {
@@ -37,6 +37,11 @@ public class DatabaseConnector : MonoBehaviour
 
     public void LogInDatabase(string type, string content)
     {
+        if (dbcon==null)
+        {
+            ConnectToDatabase();
+        }
+
         dbcon.Open();
 
         string query = "INSERT INTO Log (Type, Content, Timestamp) VALUES (\""+type+"\", \""+content+"\", \"" + DateTime.Now + "\")";

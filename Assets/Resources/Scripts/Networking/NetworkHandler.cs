@@ -7,17 +7,24 @@ using System;
 
 public class NetworkHandler : NetworkManager
 {
-    void Start()
+    public struct MessagePacket: NetworkMessage
+    {
+        public string content;
+    }
+
+    public void StartNetworking()
     {
         gameObject.GetComponent<KcpTransport>().Port = Globals.NetworkingPort;
         if (Globals.IsHost)
         {
             StartServer();
+            SetupServerCallbacks();
         }
         else
         {
             networkAddress = Globals.ServerAddress;
             StartClient();
+            SetupClientCallbacks();
         }
     }
 
@@ -45,6 +52,27 @@ public class NetworkHandler : NetworkManager
     public override void OnClientError(Exception exception)
     {
         Globals.GetDebugConsole().LogMessage("Connection error: "+exception.Message);
+    }
+
+    public void ServerMessage(string text)
+    {
+        foreach (NetworkConnectionToClient target in NetworkServer.connections.Values) {
+            MessagePacket msg = new MessagePacket
+            {
+                content = text
+            };
+            target.Send(msg);
+        }
+    }
+
+    public void SetupServerCallbacks()
+    {
+        
+    }
+
+    public void HandleClientMessage(MessagePacket msg)
+    {
+        
     }
 
     //Server side
@@ -77,5 +105,15 @@ public class NetworkHandler : NetworkManager
     public override void OnServerError(NetworkConnection conn, Exception exception)
     {
         Globals.GetDebugConsole().LogMessage("ServerErr" + exception.Message);
+    }
+
+    public void SetupClientCallbacks()
+    {
+        NetworkClient.RegisterHandler<MessagePacket>(HandleServerMessage);
+    }
+
+    public void HandleServerMessage(MessagePacket msg)
+    {
+        Globals.GetDebugConsole().LogMessage("Message received: "+msg.content);
     }
 }
