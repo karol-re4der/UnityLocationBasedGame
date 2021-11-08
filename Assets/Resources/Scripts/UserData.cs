@@ -10,6 +10,8 @@ public class UserData
     public String Nickname = "";
     public String Email = "";
 
+    public String Password = "";
+
     public bool IsComplete()
     {
         return String.IsNullOrWhiteSpace(Name) || String.IsNullOrWhiteSpace(Surname) || String.IsNullOrWhiteSpace(Nickname) || String.IsNullOrWhiteSpace(Email) || !Email.Contains("@");

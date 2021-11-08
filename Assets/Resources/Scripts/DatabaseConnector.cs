@@ -45,7 +45,7 @@ public class DatabaseConnector : MonoBehaviour
 
         dbcon.Open();
 
-        string query = "INSERT INTO Log (Type, Content, Timestamp) VALUES (\""+type+"\", \""+content+"\", \"" + DateTime.Now + "\")";
+        string query = "INSERT INTO Log (Type, Content, Timestamp) VALUES ('"+type+"', '"+content+"', '" + DateTime.Now + "')";
         IDbCommand dbcmd = dbcon.CreateCommand();
         dbcmd.CommandText = query;
 

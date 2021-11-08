@@ -22,15 +22,19 @@ public class RegisterMenu : SubMenu
         String passwordRepeated = content.transform.Find("Repeat Password Field").GetComponent<TMP_InputField>().text;
 
         //Validate login data
-        if (password.Equals(passwordRepeated) || !ud.IsComplete())
+        if (!password.Equals(passwordRepeated) || !ud.IsComplete())
         {
             //failed register message here
             return;
         }
 
+        ud.Password = password;
+
         //Get token
-        API api = new API();
-        String connectionToken = api.RegisterAndGetToken(ud, password);
+        Globals.IsHost = false;
+        Globals.GetNetworkManager().StartNetworking();
+        Globals.GetNetworkManager().SendMessageToServer("REGISTER", JsonUtility.ToJson(ud));
+        String connectionToken =  new API().RegisterAndGetToken(ud, password);
 
         //Finish
         if (String.IsNullOrWhiteSpace(connectionToken))

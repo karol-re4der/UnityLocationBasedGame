@@ -9,8 +9,9 @@ public class NetworkHandler : NetworkManager
 {
     public struct MessagePacket: NetworkMessage
     {
-        public int messageId;
-        public string content;
+        public int MessageId;
+        public string Type;
+        public string Content;
     }
     private string Token = "";
     private int LastMessageValue = 0;
@@ -31,7 +32,7 @@ public class NetworkHandler : NetworkManager
         }
     }
 
-    //Client side
+    #region Client
     public override void OnStartClient()
     {
         Globals.GetDebugConsole().LogMessage("Client started");
@@ -64,22 +65,52 @@ public class NetworkHandler : NetworkManager
 
     public void HandleMessageFromServer(MessagePacket msg)
     {
-        Globals.GetDebugConsole().LogMessage("Message received: " + msg.content);
+        //Diagnostics
+        string debugText = "Message " + msg.MessageId + " from server received. Content: " + msg.Content;
+        Globals.GetDebugConsole().LogMessage(debugText);
+
+        //Handling
+        switch (msg.Type)
+        {
+            case "REGISTER":
+                Client_REGISTER(msg);
+                break;
+            case "AUTH":
+                Client_AUTH(msg);
+                break;
+            default:
+                return;
+        }
+
+        //Diagnostics
+        debugText = msg.Type + " message " + msg.MessageId + " from server handled.";
+        Globals.GetDebugConsole().LogMessage(debugText);
     }
 
-    public void SendMessageToServer(string content)
+    private void Client_REGISTER(MessagePacket msg)
+    {
+        Globals.GetDebugConsole().LogMessage("REGISTER result: "+msg.Content);
+    }
+
+    private void Client_AUTH(MessagePacket msg)
+    {
+
+    }
+
+    public void SendMessageToServer(string type, string content)
     {
         LastMessageValue++;
         MessagePacket msg = new MessagePacket
         {
-            messageId = LastMessageValue,
-            content = content
+            MessageId = LastMessageValue,
+            Type = type,
+            Content = content
         };
         NetworkClient.Send(msg, 0);
     }
+    #endregion
 
-
-    //Server side
+    #region Server
     public override void OnStartServer()
     {
         Globals.GetDebugConsole().LogMessage("Server started");
@@ -113,25 +144,73 @@ public class NetworkHandler : NetworkManager
  
     public void HandleMessageFromClient(NetworkConnection conn, MessagePacket msg)
     {
-        Globals.GetDebugConsole().LogMessage("Message received: " + msg.content);
+        //Diagnostics
+        string debugText = "Message " + msg.MessageId + " from " + conn.address + " received. Content: "+msg.Content;
+        Globals.GetDebugConsole().LogMessage(debugText);
+        Globals.GetDatabaseConnector().LogInDatabase("MSG", debugText);
+
+        //Handling
+        switch (msg.Type)
+        {
+            case "REGISTER":
+                Server_REGISTER(conn, msg);
+                break;
+            case "AUTH":
+                Server_AUTH(conn, msg);
+                break;
+            default:
+                return;
+        }
+
+        //Diagnostics
+        debugText = msg.Type + " message " + msg.MessageId + " from " + conn.address + " handled.";
+        Globals.GetDebugConsole().LogMessage(debugText);
+        Globals.GetDatabaseConnector().LogInDatabase("MSG", debugText);
     }
 
-    public void SendMessageToClient(string text)
+    private void Server_REGISTER(NetworkConnection conn, MessagePacket msg)
+    {
+        UserData ud = new UserData();
+        ud.Name = "Karol";
+        ud.Surname = "Kozak";
+        ud.Nickname = "re4der";
+        ud.Email = "karol.re4der@gmail.com";
+        string Password = "      ";
+
+        if (ud.IsComplete() && Password.Length>6 && !String.IsNullOrWhiteSpace(Password))
+        {
+            //Success - register into database and send a new token
+            SendMessageToClient((NetworkConnectionToClient) conn, "REGISTER", "{\"success\": true}");
+        }
+        else
+        {
+            //Failure - send result
+            SendMessageToClient((NetworkConnectionToClient) conn, "REGISTER", "{\"success\": false}");
+        }
+    }
+
+    private void Server_AUTH(NetworkConnection conn, MessagePacket msg)
+    {
+
+    }
+
+    public void SendMessageToClient(NetworkConnectionToClient conn, string type, string text)
     {
         Globals.GetDatabaseConnector().GetNextMessageId();
-        foreach (NetworkConnectionToClient target in NetworkServer.connections.Values)
+
+        MessagePacket msg = new MessagePacket
         {
-            MessagePacket msg = new MessagePacket
-            {
-                messageId = Globals.GetDatabaseConnector().GetNextMessageId(),
-                content = text
-            };
-            target.Send(msg);
-        }
+            MessageId = Globals.GetDatabaseConnector().GetNextMessageId(),
+            Type = type,
+            Content = text
+        };
+
+        conn.Send(msg);
     }
 
     public void SetupServerCallbacks()
     {
         NetworkServer.RegisterHandler<MessagePacket>(HandleMessageFromClient);
     }
+    #endregion
 }

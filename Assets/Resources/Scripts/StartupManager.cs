@@ -13,8 +13,6 @@ public class StartupManager : MonoBehaviour
 
     public void RunAsClient()
     {
-        Globals.IsHost = false;
-        Globals.GetNetworkManager().StartNetworking();
         EnterGameView();
     }
 
