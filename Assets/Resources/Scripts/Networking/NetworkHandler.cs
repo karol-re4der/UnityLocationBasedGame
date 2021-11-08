@@ -9,8 +9,11 @@ public class NetworkHandler : NetworkManager
 {
     public struct MessagePacket: NetworkMessage
     {
+        public int messageId;
         public string content;
     }
+    private string Token = "";
+    private int LastMessageValue = 0;
 
     public void StartNetworking()
     {
@@ -54,26 +57,27 @@ public class NetworkHandler : NetworkManager
         Globals.GetDebugConsole().LogMessage("Connection error: "+exception.Message);
     }
 
-    public void ServerMessage(string text)
+    public void SetupClientCallbacks()
     {
-        foreach (NetworkConnectionToClient target in NetworkServer.connections.Values) {
-            MessagePacket msg = new MessagePacket
-            {
-                content = text
-            };
-            target.Send(msg);
-        }
+        NetworkClient.RegisterHandler<MessagePacket>(HandleMessageFromServer);
     }
 
-    public void SetupServerCallbacks()
+    public void HandleMessageFromServer(MessagePacket msg)
     {
-        
+        Globals.GetDebugConsole().LogMessage("Message received: " + msg.content);
     }
 
-    public void HandleClientMessage(MessagePacket msg)
+    public void SendMessageToServer(string content)
     {
-        
+        LastMessageValue++;
+        MessagePacket msg = new MessagePacket
+        {
+            messageId = LastMessageValue,
+            content = content
+        };
+        NetworkClient.Send(msg, 0);
     }
+
 
     //Server side
     public override void OnStartServer()
@@ -106,14 +110,28 @@ public class NetworkHandler : NetworkManager
     {
         Globals.GetDebugConsole().LogMessage("ServerErr" + exception.Message);
     }
-
-    public void SetupClientCallbacks()
+ 
+    public void HandleMessageFromClient(NetworkConnection conn, MessagePacket msg)
     {
-        NetworkClient.RegisterHandler<MessagePacket>(HandleServerMessage);
+        Globals.GetDebugConsole().LogMessage("Message received: " + msg.content);
     }
 
-    public void HandleServerMessage(MessagePacket msg)
+    public void SendMessageToClient(string text)
     {
-        Globals.GetDebugConsole().LogMessage("Message received: "+msg.content);
+        Globals.GetDatabaseConnector().GetNextMessageId();
+        foreach (NetworkConnectionToClient target in NetworkServer.connections.Values)
+        {
+            MessagePacket msg = new MessagePacket
+            {
+                messageId = Globals.GetDatabaseConnector().GetNextMessageId(),
+                content = text
+            };
+            target.Send(msg);
+        }
+    }
+
+    public void SetupServerCallbacks()
+    {
+        NetworkServer.RegisterHandler<MessagePacket>(HandleMessageFromClient);
     }
 }

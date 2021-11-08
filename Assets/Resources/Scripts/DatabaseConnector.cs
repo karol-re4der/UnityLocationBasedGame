@@ -5,6 +5,7 @@ using System.Data;
 using Mono.Data.Sqlite;
 using System.IO;
 using System;
+using System.Data.SqlClient;
 
 public class DatabaseConnector : MonoBehaviour
 {
@@ -48,7 +49,36 @@ public class DatabaseConnector : MonoBehaviour
         IDbCommand dbcmd = dbcon.CreateCommand();
         dbcmd.CommandText = query;
 
-        IDataReader reader = dbcmd.ExecuteReader();
+        dbcmd.ExecuteNonQuery();
         dbcon.Close();
+    }
+
+    public int GetNextMessageId()
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        dbcon.Open();
+
+        string query = "SELECT Id, Value, Step FROM Counters WHERE Name=\"MessageId\"";
+        IDbCommand dbcmd = dbcon.CreateCommand();
+        dbcmd.CommandText = query;
+
+        IDataReader reader = dbcmd.ExecuteReader();
+        reader.Read();
+        int id = Int32.Parse(reader[0].ToString());
+        int value = Int32.Parse(reader[1].ToString());
+        int step = Int32.Parse(reader[2].ToString());
+        reader.Close();
+
+        query = "UPDATE Counters SET Value=Value+"+step+" WHERE Id="+id;
+        dbcmd.CommandText = query;
+        dbcmd.ExecuteNonQuery();
+
+        dbcon.Close();
+
+        return value;
     }
 }
