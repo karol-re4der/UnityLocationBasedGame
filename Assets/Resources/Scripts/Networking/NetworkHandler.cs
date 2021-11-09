@@ -4,6 +4,8 @@ using UnityEngine;
 using Mirror;
 using kcp2k;
 using System;
+using Newtonsoft.Json;
+using System.Dynamic;
 
 public class NetworkHandler : NetworkManager
 {
@@ -78,6 +80,9 @@ public class NetworkHandler : NetworkManager
             case "AUTH":
                 Client_AUTH(msg);
                 break;
+            case "CHECK":
+                Client_CHECK(msg);
+                break;
             default:
                 return;
         }
@@ -89,10 +94,41 @@ public class NetworkHandler : NetworkManager
 
     private void Client_REGISTER(MessagePacket msg)
     {
-        Globals.GetDebugConsole().LogMessage("REGISTER result: "+msg.Content);
+        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+        string message = obj.msg;
+        bool result = obj.success;
+
+        if (result)
+        {
+            Token = message;
+            Globals.GetDebugConsole().LogMessage("REGISTER successful. New session token: " + message);
+            Globals.GetStartupManager().RunAsClient();
+        }
+        else
+        {
+            Globals.GetDebugConsole().LogMessage("REGISTER failed: "+message);
+        }
     }
 
     private void Client_AUTH(MessagePacket msg)
+    {
+        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+        string message = obj.msg;
+        bool result = obj.success;
+
+        if (result)
+        {
+            Token = message;
+            Globals.GetDebugConsole().LogMessage("AUTH successful.");
+            Globals.GetStartupManager().RunAsClient();
+        }
+        else
+        {
+            Globals.GetDebugConsole().LogMessage("AUTH failed: " + message);
+        }
+    }
+
+    private void Client_CHECK(MessagePacket msg)
     {
 
     }
@@ -158,6 +194,9 @@ public class NetworkHandler : NetworkManager
             case "AUTH":
                 Server_AUTH(conn, msg);
                 break;
+            case "CHECK":
+                Server_CHECK(conn, msg);
+                break;
             default:
                 return;
         }
@@ -208,6 +247,38 @@ public class NetworkHandler : NetworkManager
     }
 
     private void Server_AUTH(NetworkConnection conn, MessagePacket msg)
+    {
+        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+        string login = obj.login;
+        string pass = obj.pass;
+
+        int userId = Globals.GetDatabaseConnector().FindUser(login);
+        if (userId >= 0)
+        {
+            if (Globals.GetDatabaseConnector().CheckUserPassword(userId, pass))
+            {
+                string sessionToken = Globals.GetDatabaseConnector().FindExistingToken(userId);
+                if (String.IsNullOrWhiteSpace(sessionToken))
+                {
+                    sessionToken = GenerateToken();
+                    int sessionId = Globals.GetDatabaseConnector().InsertNewSession(sessionToken);
+                    Globals.GetDatabaseConnector().AssignSession(sessionId, userId);
+                }
+
+                SendMessageToClient((NetworkConnectionToClient)conn, "AUTH", "{\"success\": true, \"msg\": \"" + sessionToken + "\"}");
+            }
+            else
+            {
+                SendMessageToClient((NetworkConnectionToClient)conn, "AUTH", "{\"success\": false, \"msg\": \"Wrong password.\"}");
+            }
+        }
+        else
+        {
+            SendMessageToClient((NetworkConnectionToClient)conn, "AUTH", "{\"success\": false, \"msg\": \"No such user.\"}");
+        }
+    }
+
+    private void Server_CHECK(NetworkConnection conn, MessagePacket msg)
     {
 
     }

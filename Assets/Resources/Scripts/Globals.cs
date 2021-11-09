@@ -10,6 +10,11 @@ public static class Globals
     public static bool IsHost = false;
     public static string SqliteConnectionString = "URI=file:" + Application.persistentDataPath + "/database.db";
 
+    public static StartupManager GetStartupManager()
+    {
+        return GameObject.Find("StartupManager").GetComponent<StartupManager>();
+    }
+
     public static NetworkHandler GetNetworkManager()
     {
         return GameObject.Find("Networking").GetComponent<NetworkHandler>();

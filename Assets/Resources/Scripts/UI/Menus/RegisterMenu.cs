@@ -34,17 +34,6 @@ public class RegisterMenu : SubMenu
         Globals.IsHost = false;
         Globals.GetNetworkManager().StartNetworking();
         Globals.GetNetworkManager().SendMessageToServer("REGISTER", JsonUtility.ToJson(ud));
-        String connectionToken =  new API().RegisterAndGetToken(ud, password);
-
-        //Finish
-        if (String.IsNullOrWhiteSpace(connectionToken))
-        {
-            //failed login message here
-        }
-        else
-        {
-            GameObject.Find("StartupManager").GetComponent<StartupManager>().RunAsClient();
-        }
     }
 
     public void Button_Return()

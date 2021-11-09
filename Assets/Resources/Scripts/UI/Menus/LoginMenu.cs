@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 using UnityEngine;
 using TMPro;
+using System.Dynamic;
+using Newtonsoft.Json;
 
 public class LoginMenu : SubMenu
 {
@@ -11,29 +13,18 @@ public class LoginMenu : SubMenu
 
     public void Button_Login()
     {
-        //Temporary
-        GameObject.Find("StartupManager").GetComponent<StartupManager>().RunAsClient();
-        return;
-        //end of temporary
-
-
         //Load login form data
         String login = content.transform.Find("Login Field").GetComponent<TMP_InputField>().text;
         String password = content.transform.Find("Password Field").GetComponent<TMP_InputField>().text;
 
         //Get token
-        API api = new API();
-        String connectionToken = api.GetConnectionToken(login, password);
-
-        //Finish
-        if (String.IsNullOrWhiteSpace(connectionToken))
-        {
-            //failed login message here
-        }
-        else
-        {
-            GameObject.Find("StartupManager").GetComponent<StartupManager>().RunAsClient();
-        }
+        Globals.IsHost = false;
+        Globals.GetNetworkManager().StartNetworking();
+        dynamic obj = new ExpandoObject();
+        obj.login = login;
+        obj.pass = password;
+        string message = JsonConvert.SerializeObject(obj);
+        Globals.GetNetworkManager().SendMessageToServer("AUTH", message);
     }
 
     public void Button_Return()

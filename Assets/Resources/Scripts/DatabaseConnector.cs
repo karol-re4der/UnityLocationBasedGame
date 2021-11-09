@@ -195,4 +195,94 @@ public class DatabaseConnector : MonoBehaviour
 
         dbcon.Close();
     }
+
+    public bool CheckUserPassword(int userId, string pass)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        dbcon.Open();
+
+        string query = $"SELECT password FROM UserAccounts WHERE Id='{userId}'";
+        IDbCommand dbcmd = dbcon.CreateCommand();
+        dbcmd.CommandText = query;
+        IDataReader reader = dbcmd.ExecuteReader();
+
+        string password = "";
+        try
+        {
+            reader.Read();
+            password = reader[0].ToString();
+        }
+        catch (SqliteException ex)
+        {
+            
+        }
+
+        reader.Close();
+        dbcon.Close();
+        return String.IsNullOrWhiteSpace(pass)?false:password.Equals(pass);
+    }
+
+    public int FindUser(string login)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        dbcon.Open();
+
+        string query = $"SELECT Id FROM UserAccounts WHERE Nickname='{login}' OR Email='{login}'";
+        IDbCommand dbcmd = dbcon.CreateCommand();
+        dbcmd.CommandText = query;
+        IDataReader reader = dbcmd.ExecuteReader();
+
+        int id = -1;
+        try
+        {
+            reader.Read();
+            id = Int32.Parse(reader[0].ToString());
+        }
+        catch (SqliteException ex)
+        {
+
+        }
+
+        reader.Close();
+        dbcon.Close();
+        return id;
+    }
+
+    public string FindExistingToken(int userId)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        dbcon.Open();
+
+        string query = $"SELECT s.Token FROM Sessions s JOIN UserAccounts a ON a.SessionId=s.Id WHERE a.Id={userId}";
+        IDbCommand dbcmd = dbcon.CreateCommand();
+        dbcmd.CommandText = query;
+        IDataReader reader = dbcmd.ExecuteReader();
+
+        string token = "";
+        try
+        {
+            reader.Read();
+            token = reader[0].ToString();
+        }
+        catch (SqliteException ex)
+        {
+
+        }
+
+        reader.Close();
+        dbcon.Close();
+        return token;
+    }
 }
