@@ -17,11 +17,12 @@ public class NetworkHandler : NetworkManager
     }
     private string Token = "";
     private int LastMessageValue = 0;
+    public bool IsHost = false;
 
-    public void StartNetworking()
+    void Start()
     {
         gameObject.GetComponent<KcpTransport>().Port = Globals.NetworkingPort;
-        if (Globals.IsHost)
+        if (IsHost)
         {
             StartServer();
             SetupServerCallbacks();
@@ -48,11 +49,13 @@ public class NetworkHandler : NetworkManager
     public override void OnClientConnect(NetworkConnection conn)
     {
         Globals.GetDebugConsole().LogMessage("Connected to server");
+        Globals.GetLoader().Exit();
     }
 
     public override void OnClientDisconnect(NetworkConnection conn)
     {
         Globals.GetDebugConsole().LogMessage("Disconnected from server");
+        Globals.GetLoader().Enter("Reconnecting");
     }
 
     public override void OnClientError(Exception exception)
@@ -102,10 +105,11 @@ public class NetworkHandler : NetworkManager
         {
             Token = message;
             Globals.GetDebugConsole().LogMessage("REGISTER successful. New session token: " + message);
-            Globals.GetStartupManager().RunAsClient();
+            Globals.GetStartupManager().EnterGameView();
         }
         else
         {
+            Globals.GetPrompt().ShowMessage(message);
             Globals.GetDebugConsole().LogMessage("REGISTER failed: "+message);
         }
     }
@@ -119,11 +123,12 @@ public class NetworkHandler : NetworkManager
         if (result)
         {
             Token = message;
-            Globals.GetDebugConsole().LogMessage("AUTH successful.");
-            Globals.GetStartupManager().RunAsClient();
+            Globals.GetDebugConsole().LogMessage("AUTH successful!");
+            Globals.GetStartupManager().EnterGameView();
         }
         else
         {
+            Globals.GetPrompt().ShowMessage(message);
             Globals.GetDebugConsole().LogMessage("AUTH failed: " + message);
         }
     }
@@ -151,12 +156,14 @@ public class NetworkHandler : NetworkManager
     {
         Globals.GetDebugConsole().LogMessage("Server started");
         Globals.GetDatabaseConnector().LogInDatabase("ServerStart", "Server was started");
+        Globals.GetLoader().Exit();
     }
 
     public override void OnStopServer()
     {
         Globals.GetDebugConsole().LogMessage("Server stopped");
         Globals.GetDatabaseConnector().LogInDatabase("ServerStop", "Server was stopped");
+        Globals.GetLoader().Enter("Restarting");
     }
 
     public override void OnServerConnect(NetworkConnection conn)

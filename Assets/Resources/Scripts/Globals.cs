@@ -7,8 +7,17 @@ public static class Globals
 {
     public static string ServerAddress = "localhost";
     public static ushort NetworkingPort = 7777;
-    public static bool IsHost = false;
     public static string SqliteConnectionString = "URI=file:" + Application.persistentDataPath + "/database.db";
+
+    public static LoaderScreen GetLoader()
+    {
+        return GameObject.Find("Canvas").transform.Find("Loading Overlay").GetComponent<LoaderScreen>();
+    }
+
+    public static Prompt GetPrompt()
+    {
+        return GameObject.Find("Canvas").transform.Find("Prompt Overlay").GetComponent<Prompt>();
+    }
 
     public static StartupManager GetStartupManager()
     {

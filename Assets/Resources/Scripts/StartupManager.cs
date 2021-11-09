@@ -11,19 +11,7 @@ public class StartupManager : MonoBehaviour
     public List<GameObject> StartupGameObjects;
     public List<MonoBehaviour> StartupComponents;
 
-    public void RunAsClient()
-    {
-        EnterGameView();
-    }
-
-    public void RunAsHost()
-    {
-        Globals.IsHost = true;
-        Globals.GetNetworkManager().StartNetworking();
-        EnterGameView();
-    }
-
-    private void EnterGameView()
+    public void EnterGameView()
     {
         //Close startup view elements
         foreach (GameObject obj in StartupGameObjects)
@@ -46,7 +34,7 @@ public class StartupManager : MonoBehaviour
         }
     }
 
-    private void ExitGameView()
+    public void ExitGameView()
     {
         //Open game view elements
         foreach (GameObject obj in GameplayGameObjects)

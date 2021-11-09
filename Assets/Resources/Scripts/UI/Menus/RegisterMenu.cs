@@ -16,23 +16,23 @@ public class RegisterMenu : SubMenu
         ud.Name = content.transform.Find("Name Field").GetComponent<TMP_InputField>().text;
         ud.Surname = content.transform.Find("Surname Field").GetComponent<TMP_InputField>().text;
         ud.Nickname = content.transform.Find("Nick Field").GetComponent<TMP_InputField>().text;
-        ud.Email = content.transform.Find("Nick Field").GetComponent<TMP_InputField>().text;
-
-        String password = content.transform.Find("Password Field").GetComponent<TMP_InputField>().text;
+        ud.Email = content.transform.Find("Email Field").GetComponent<TMP_InputField>().text;
+        ud.Password = content.transform.Find("Password Field").GetComponent<TMP_InputField>().text;
         String passwordRepeated = content.transform.Find("Repeat Password Field").GetComponent<TMP_InputField>().text;
 
         //Validate login data
-        if (!password.Equals(passwordRepeated) || !ud.IsComplete())
+        if (!ud.IsComplete())
         {
-            //failed register message here
+            Globals.GetPrompt().ShowMessage("Fill all fields to register!");
+            return;
+        }
+        else if (!ud.Password.Equals(passwordRepeated))
+        {
+            Globals.GetPrompt().ShowMessage("Passwords need to match!");
             return;
         }
 
-        ud.Password = password;
-
-        //Get token
-        Globals.IsHost = false;
-        Globals.GetNetworkManager().StartNetworking();
+        //Request token
         Globals.GetNetworkManager().SendMessageToServer("REGISTER", JsonUtility.ToJson(ud));
     }
 

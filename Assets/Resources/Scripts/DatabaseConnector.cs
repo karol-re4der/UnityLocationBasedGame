@@ -6,6 +6,7 @@ using Mono.Data.Sqlite;
 using System.IO;
 using System;
 using System.Data.SqlClient;
+using Mirror;
 
 public class DatabaseConnector : MonoBehaviour
 {
@@ -14,7 +15,7 @@ public class DatabaseConnector : MonoBehaviour
 
     public void ConnectToDatabase()
     {
-        if (Globals.IsHost)
+        if (Globals.GetNetworkManager().mode==NetworkManagerMode.ServerOnly)
         {
             try
             {

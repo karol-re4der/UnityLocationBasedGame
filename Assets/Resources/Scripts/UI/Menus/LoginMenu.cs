@@ -13,13 +13,18 @@ public class LoginMenu : SubMenu
 
     public void Button_Login()
     {
-        //Load login form data
+        //Load input
         String login = content.transform.Find("Login Field").GetComponent<TMP_InputField>().text;
         String password = content.transform.Find("Password Field").GetComponent<TMP_InputField>().text;
 
-        //Get token
-        Globals.IsHost = false;
-        Globals.GetNetworkManager().StartNetworking();
+        //Validate input
+        if (String.IsNullOrWhiteSpace(login) || String.IsNullOrWhiteSpace(password))
+        {
+            Globals.GetPrompt().ShowMessage("Fill login and password to log in!");
+            return;
+        }
+
+        //Request authentication
         dynamic obj = new ExpandoObject();
         obj.login = login;
         obj.pass = password;

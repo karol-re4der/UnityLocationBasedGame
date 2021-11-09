@@ -41,7 +41,7 @@ public class SubMenu : MonoBehaviour
         InvokeRepeating("FadeIn", 0, 0.01f);
     }
 
-    private void FadeIn()
+    protected void FadeIn()
     {
         Color newColor = fade.GetComponent<Image>().color;
         newColor.a += (float)(0.01);
@@ -60,7 +60,7 @@ public class SubMenu : MonoBehaviour
         InvokeRepeating("FadeOut", 0, 0.01f);
     }
 
-    private void FadeOut()
+    protected void FadeOut()
     {
         Color newColor = fade.GetComponent<Image>().color;
         newColor.a -= (float)(0.01);
