@@ -170,22 +170,40 @@ public class NetworkHandler : NetworkManager
 
     private void Server_REGISTER(NetworkConnection conn, MessagePacket msg)
     {
-        UserData ud = new UserData();
-        ud.Name = "Karol";
-        ud.Surname = "Kozak";
-        ud.Nickname = "re4der";
-        ud.Email = "karol.re4der@gmail.com";
-        string Password = "      ";
+        UserData ud = JsonUtility.FromJson<UserData>(msg.Content);
 
-        if (ud.IsComplete() && Password.Length>6 && !String.IsNullOrWhiteSpace(Password))
+        if (ud.IsComplete())
         {
-            //Success - register into database and send a new token
-            SendMessageToClient((NetworkConnectionToClient) conn, "REGISTER", "{\"success\": true}");
+            if (ud.Password.Length > 6 && !String.IsNullOrWhiteSpace(ud.Password))
+            {
+                string newToken = GenerateToken();
+                if (!String.IsNullOrWhiteSpace(newToken))
+                {
+                    if (!Globals.GetDatabaseConnector().UserExists(ud))
+                    {
+                        int userId = Globals.GetDatabaseConnector().InsertNewUser(ud);
+                        int sessionId = Globals.GetDatabaseConnector().InsertNewSession(newToken);
+                        Globals.GetDatabaseConnector().AssignSession(sessionId, userId);
+                        SendMessageToClient((NetworkConnectionToClient)conn, "REGISTER", "{\"success\": true, \"msg\": \"" + newToken + "\"}");
+                    }
+                    else
+                    {
+                        SendMessageToClient((NetworkConnectionToClient)conn, "REGISTER", "{\"success\": false, \"msg\": \"Email or nickname already in use.\"}");
+                    }
+                }
+                else
+                {
+                    SendMessageToClient((NetworkConnectionToClient)conn, "REGISTER", "{\"success\": false, \"msg\": \"Server-error: cannot generate new token.\"}");
+                }
+            }
+            else
+            {
+                SendMessageToClient((NetworkConnectionToClient)conn, "REGISTER", "{\"success\": false, \"msg\": \"Password invalid.\"}");
+            }
         }
         else
         {
-            //Failure - send result
-            SendMessageToClient((NetworkConnectionToClient) conn, "REGISTER", "{\"success\": false}");
+            SendMessageToClient((NetworkConnectionToClient)conn, "REGISTER", "{\"success\": false, \"msg\": \"Credentials incomplete.\"}");
         }
     }
 
@@ -211,6 +229,25 @@ public class NetworkHandler : NetworkManager
     public void SetupServerCallbacks()
     {
         NetworkServer.RegisterHandler<MessagePacket>(HandleMessageFromClient);
+    }
+
+    private string GenerateToken()
+    {
+        string newToken = "";
+        int attempts = 0;
+
+        do
+        {
+            if (attempts > 10)
+            {
+                return "";
+            }
+
+            newToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Substring(0, 16);
+            attempts++;
+        } while (Globals.GetDatabaseConnector().TokenInUse(newToken));
+
+        return newToken;
     }
     #endregion
 }
