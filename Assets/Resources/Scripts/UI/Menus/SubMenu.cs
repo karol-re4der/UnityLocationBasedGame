@@ -17,7 +17,7 @@ public class SubMenu : MonoBehaviour
         return content.activeSelf;
     }
 
-    void Start()
+    void Awake()
     {
         fade = transform.Find("Fade");
         content = transform.Find("Content").gameObject;
