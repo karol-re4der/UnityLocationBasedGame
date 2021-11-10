@@ -29,4 +29,14 @@ public static class ClientAPI
 
         return message;
     }
+
+    public static string Prepare_NEWPOS(Vector2 coords)
+    {
+        dynamic obj = new ExpandoObject();
+        obj.co_lat = coords.x;
+        obj.co_long = coords.y;
+        string message = JsonConvert.SerializeObject(obj);
+
+        return message;
+    }
 }

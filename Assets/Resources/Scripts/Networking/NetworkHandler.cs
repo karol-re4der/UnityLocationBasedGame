@@ -166,6 +166,11 @@ public class NetworkHandler : NetworkManager
         Globals.GetLoader().Exit();
     }
 
+    private void Client_NEWPOS(MessagePacket msg)
+    {
+
+    }
+
     public void SendMessageToServer(string type, string content)
     {
         LastMessageValue++;
@@ -293,7 +298,7 @@ public class NetworkHandler : NetworkManager
             if (Globals.GetDatabaseConnector().CheckUserPassword(userId, pass))
             {
                 string sessionToken = Globals.GetDatabaseConnector().FindExistingToken(userId);
-                if (String.IsNullOrWhiteSpace(sessionToken))
+                if (String.IsNullOrWhiteSpace(sessionToken) || Globals.GetDatabaseConnector().TokenInUse(sessionToken)!=1)
                 {
                     sessionToken = GenerateToken();
                     if (String.IsNullOrWhiteSpace(sessionToken))
@@ -302,9 +307,12 @@ public class NetworkHandler : NetworkManager
                         return;
                     }
 
-                    Globals.GetDatabaseConnector().RefreshToken(sessionToken);
                     int sessionId = Globals.GetDatabaseConnector().AddNewToken(sessionToken);
                     Globals.GetDatabaseConnector().AssignToken(sessionId, userId);
+                }
+                else
+                {
+                    Globals.GetDatabaseConnector().RefreshToken(sessionToken);
                 }
 
                 SendMessageToClient((NetworkConnectionToClient)conn, "AUTH", "{\"success\": true, \"msg\": \"" + sessionToken + "\"}");
@@ -328,12 +336,18 @@ public class NetworkHandler : NetworkManager
         bool result = Globals.GetDatabaseConnector().TokenInUse(token)==1;
         if (result)
         {
+            Globals.GetDatabaseConnector().RefreshToken(token);
             SendMessageToClient((NetworkConnectionToClient)conn, "CHECK", "{\"success\": true}");
         }
         else
         {
             SendMessageToClient((NetworkConnectionToClient)conn, "CHECK", "{\"success\": false, \"msg\": \"Token not in use or session timed out\"}");
         }
+    }
+
+    private void Server_NEWPOS(NetworkConnection conn, MessagePacket msg)
+    {
+
     }
 
     public void SendMessageToClient(NetworkConnectionToClient conn, string type, string text)

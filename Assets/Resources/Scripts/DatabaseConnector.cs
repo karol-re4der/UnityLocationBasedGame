@@ -283,7 +283,7 @@ public class DatabaseConnector : MonoBehaviour
         {
             dbcon.Open();
 
-            string query = $"UPDATE Sessions SET LastUsed='{DateTime.Now}', ValidUntil='{DateTime.Now.AddHours(Globals.SessionTimeoutInHours)}' WHERE Token='{token}'";
+            string query = $"UPDATE Sessions SET LastUsed=datetime('now'), ValidUntil=datetime('now', '+{(Globals.SessionTimeoutInHours)} hour') WHERE Token='{token}'";
             IDbCommand dbcmd = dbcon.CreateCommand();
             dbcmd.CommandText = query;
             dbcmd.ExecuteNonQuery();
@@ -354,7 +354,7 @@ public class DatabaseConnector : MonoBehaviour
             dbcon.Open();
 
             //Clean timed out sessions
-            string query = $"DELETE FROM Sessions WHERE ValidUntil<'{DateTime.Now}'";
+            string query = $"DELETE FROM Sessions WHERE ValidUntil<datetime('now')";
             IDbCommand dbcmd = dbcon.CreateCommand();
             dbcmd.CommandText = query;
             dbcmd.ExecuteNonQuery();
@@ -425,7 +425,7 @@ public class DatabaseConnector : MonoBehaviour
             dbcon.Open();
 
             //Insert new session
-            string query = $"INSERT INTO Sessions(Token, LastUsed, ValidUntil) VALUES('{token}', '{DateTime.Now}', '{DateTime.Now.AddHours(Globals.SessionTimeoutInHours)}')";
+            string query = $"INSERT INTO Sessions(Token, LastUsed, ValidUntil) VALUES('{token}', datetime('now'), datetime('now', '+{(Globals.SessionTimeoutInHours)} hour'))";
             IDbCommand dbcmd = dbcon.CreateCommand();
             dbcmd.CommandText = query;
             dbcmd.ExecuteNonQuery();
@@ -451,6 +451,46 @@ public class DatabaseConnector : MonoBehaviour
         }
 
         return sessionId;
+    }
+
+    #endregion
+
+    #region Gampeplay
+    
+    public List<GameplaySpot> GetSpots(Vector2 StartPos, Vector2 EndPos)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        List<GameplaySpot> result = new List<GameplaySpot>();
+        IDataReader reader = null;
+        try
+        {
+            dbcon.Open();
+
+            string query = $"";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            //reader = dbcmd.ExecuteReader();
+            //reader.Read();
+            //token = reader[0].ToString();
+        }
+        catch (Exception ex)
+        {
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+        }
+        finally
+        {
+            if (reader != null && reader.IsClosed)
+            {
+                reader.Close();
+            }
+            dbcon.Close();
+        }
+
+        return result;
     }
 
     #endregion
