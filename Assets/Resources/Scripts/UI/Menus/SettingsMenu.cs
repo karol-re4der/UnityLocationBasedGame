@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
-public class SettingsMenu : MonoBehaviour
+public class SettingsMenu : SubMenu
 {
     public void Button_Exit()
     {
@@ -11,6 +11,10 @@ public class SettingsMenu : MonoBehaviour
     }
     public void Button_Logout()
     {
-        Application.Quit();
+        base.Exit();
+        PlayerPrefs.SetString("Token", "");
+        Globals.GetStartupManager().ExitGameView();
+        Globals.GetDebugConsole().LogMessage("Logged off!");
+        Globals.GetPrompt().ShowMessage("Logged off!");
     }
 }

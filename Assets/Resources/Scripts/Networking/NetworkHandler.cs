@@ -118,6 +118,7 @@ public class NetworkHandler : NetworkManager
         {
             PlayerPrefs.SetString("Token", message);
             Globals.GetDebugConsole().LogMessage("REGISTER successful. New session token: " + message);
+            GameObject.Find("Canvas").transform.Find("Startup View/Menus/Register Menu").GetComponent<LoginMenu>().Exit();
             Globals.GetStartupManager().EnterGameView();
         }
         else
@@ -137,6 +138,7 @@ public class NetworkHandler : NetworkManager
         {
             PlayerPrefs.SetString("Token", message);
             Globals.GetDebugConsole().LogMessage("AUTH successful!");
+            GameObject.Find("Canvas").transform.Find("Startup View/Menus/Login Menu").GetComponent<LoginMenu>().Exit();
             Globals.GetStartupManager().EnterGameView();
         }
         else

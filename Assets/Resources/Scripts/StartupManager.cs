@@ -36,7 +36,7 @@ public class StartupManager : MonoBehaviour
 
     public void ExitGameView()
     {
-        //Open game view elements
+        //Hide game view elements
         foreach (GameObject obj in GameplayGameObjects)
         {
             obj.SetActive(false);
@@ -46,7 +46,7 @@ public class StartupManager : MonoBehaviour
             com.enabled = false;
         }
 
-        //Close startup view elements
+        //Open startup view elements
         foreach (GameObject obj in StartupGameObjects)
         {
             obj.SetActive(true);

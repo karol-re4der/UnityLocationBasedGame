@@ -8,13 +8,13 @@ public class StartupMenu : SubMenu
     public SubMenu RegisterButtonTarget;
 
     public void Button_Login()
-    {
+    { 
         LoginButtonTarget.Enter();
-        gameObject.GetComponent<SubMenu>().Exit();
+        base.Exit();
     }
     public void Button_Register()
     {
         RegisterButtonTarget.Enter();
-        gameObject.GetComponent<SubMenu>().Exit();
+        base.Exit();
     }
 }
