@@ -1,9 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Microsoft.Geospatial;
 
-public class GameplaySpot
+public class PlayerData
 {
-    public LatLon coords;
+    public int Value;
+    public int Income;
 }

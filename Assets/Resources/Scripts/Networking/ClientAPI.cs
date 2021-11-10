@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Newtonsoft.Json;
 using System.Dynamic;
+using Microsoft.Geospatial;
 
 public static class ClientAPI
 {
@@ -30,11 +31,11 @@ public static class ClientAPI
         return message;
     }
 
-    public static string Prepare_NEWPOS(Vector2 coords)
+    public static string Prepare_UPD(GeoBoundingBox bounds, string token)
     {
         dynamic obj = new ExpandoObject();
-        obj.co_lat = coords.x;
-        obj.co_long = coords.y;
+        obj.bounds = bounds.ToBase64();
+        obj.token = token;
         string message = JsonConvert.SerializeObject(obj);
 
         return message;

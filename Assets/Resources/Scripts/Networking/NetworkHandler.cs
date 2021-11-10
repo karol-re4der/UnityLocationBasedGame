@@ -4,8 +4,11 @@ using UnityEngine;
 using Mirror;
 using kcp2k;
 using System;
+using System.Linq;
 using Newtonsoft.Json;
 using System.Dynamic;
+using Microsoft.Geospatial;
+using Microsoft.Maps.Unity;
 
 public class NetworkHandler : NetworkManager
 {
@@ -33,6 +36,17 @@ public class NetworkHandler : NetworkManager
             StartClient();
             SetupClientCallbacks();
         }
+    }
+
+    void Update()
+    {
+        //Gameplay loops here
+    }
+
+    public void Testfunc()
+    {
+        string message = ClientAPI.Prepare_UPD(Globals.GetMap().GetComponent<MapRenderer>().Bounds, PlayerPrefs.GetString("Token", ""));
+        SendMessageToServer("UPD", message);
     }
 
     #region Client
@@ -96,6 +110,12 @@ public class NetworkHandler : NetworkManager
                 break;
             case "CHECK":
                 Client_CHECK(msg);
+                break;
+            case "UPD":
+                Client_UPD(msg);
+                break;
+            case "KILL":
+                Client_KILL(msg);
                 break;
             default:
                 return;
@@ -166,9 +186,18 @@ public class NetworkHandler : NetworkManager
         Globals.GetLoader().Exit();
     }
 
-    private void Client_NEWPOS(MessagePacket msg)
+    private void Client_UPD(MessagePacket msg)
     {
+        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+        List<GameplaySpot> spots = ((string)obj.spots).FromBase64<List<GameplaySpot>>();
+        PlayerData pd = obj.pd;
 
+        Debug.Log(spots.ToString());
+    }
+
+    private void Client_KILL(MessagePacket msg)
+    {
+        //Get disconnected and die
     }
 
     public void SendMessageToServer(string type, string content)
@@ -237,6 +266,9 @@ public class NetworkHandler : NetworkManager
             case "CHECK":
                 Server_CHECK(conn, msg);
                 break;
+            case "UPD":
+                Server_UPD(conn, msg);
+                break;
             default:
                 return;
         }
@@ -260,9 +292,11 @@ public class NetworkHandler : NetworkManager
                 {
                     if (Globals.GetDatabaseConnector().UserExists(ud)==0)
                     {
-                        int userId = Globals.GetDatabaseConnector().InsertNewUser(ud);
-                        int sessionId = Globals.GetDatabaseConnector().AddNewToken(newToken);
+                        long userId = Globals.GetDatabaseConnector().InsertNewUser(ud);
+                        long sessionId = Globals.GetDatabaseConnector().AddNewToken(newToken);
                         Globals.GetDatabaseConnector().AssignToken(sessionId, userId);
+                        Globals.GetDatabaseConnector().ResetPlayerData(userId);
+
                         SendMessageToClient((NetworkConnectionToClient)conn, "REGISTER", "{\"success\": true, \"msg\": \"" + newToken + "\"}");
                     }
                     else
@@ -292,7 +326,7 @@ public class NetworkHandler : NetworkManager
         string login = obj.login;
         string pass = obj.pass;
 
-        int userId = Globals.GetDatabaseConnector().GetUserId(login);
+        long userId = Globals.GetDatabaseConnector().GetUserId(login);
         if (userId >= 0)
         {
             if (Globals.GetDatabaseConnector().CheckUserPassword(userId, pass))
@@ -307,7 +341,7 @@ public class NetworkHandler : NetworkManager
                         return;
                     }
 
-                    int sessionId = Globals.GetDatabaseConnector().AddNewToken(sessionToken);
+                    long sessionId = Globals.GetDatabaseConnector().AddNewToken(sessionToken);
                     Globals.GetDatabaseConnector().AssignToken(sessionId, userId);
                 }
                 else
@@ -345,9 +379,30 @@ public class NetworkHandler : NetworkManager
         }
     }
 
-    private void Server_NEWPOS(NetworkConnection conn, MessagePacket msg)
+    private void Server_UPD(NetworkConnection conn, MessagePacket msg)
     {
+        dynamic msgObj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+        GeoBoundingBox bounds = ((string)msgObj.bounds).FromBase64<GeoBoundingBox>();
+        string token = msgObj.token;
 
+        if (Globals.GetDatabaseConnector().TokenInUse(token)==1)
+        {
+            Globals.GetDatabaseConnector().RefreshToken(token);
+
+            List<GameplaySpot> spots = Globals.GetDatabaseConnector().GetSpots();
+            PlayerData pd = Globals.GetDatabaseConnector().GetPlayerData();
+
+            dynamic resObj = new ExpandoObject();
+            resObj.spots = spots.Where((x)=>bounds.Intersects(x.coords)).ToBase64();
+            resObj.pd = pd;
+            string message = JsonConvert.SerializeObject(resObj);
+
+            SendMessageToClient((NetworkConnectionToClient)conn, "UPD", message);
+        }
+        else
+        {
+            SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Connection timed out\"}");
+        }
     }
 
     public void SendMessageToClient(NetworkConnectionToClient conn, string type, string text)

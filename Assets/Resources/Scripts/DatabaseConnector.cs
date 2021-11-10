@@ -115,31 +115,23 @@ public class DatabaseConnector : MonoBehaviour
 
     #region Accounts
 
-    public int InsertNewUser(UserData user)
+    public long InsertNewUser(UserData user)
     {
         if (dbcon == null)
         {
             ConnectToDatabase();
         }
 
-        int userId = -1;
-        IDataReader reader = null;
+        long userId = -1;
         try
         {
             dbcon.Open();
 
             //Insert user
-            string query = $"INSERT INTO UserAccounts(Name, Surname, Nickname, Email, Password) VALUES('{user.Name}','{user.Surname}','{user.Nickname}','{user.Email}','{user.Password}')";
+            string query = $"INSERT INTO UserAccounts(Name, Surname, Nickname, Email, Password) VALUES('{user.Name}','{user.Surname}','{user.Nickname}','{user.Email}','{user.Password}');SELECT last_insert_rowid();";
             IDbCommand dbcmd = dbcon.CreateCommand();
             dbcmd.CommandText = query;
-            dbcmd.ExecuteNonQuery();
-
-            //Get resulting user id
-            query = $"SELECT Id FROM UserAccounts WHERE Nickname='{user.Nickname}'";
-            dbcmd.CommandText = query;
-            reader = dbcmd.ExecuteReader();
-            reader.Read();
-            userId = Int32.Parse(reader[0].ToString());
+            userId = (long)dbcmd.ExecuteScalar();
         }
         catch (Exception ex)
         {
@@ -147,10 +139,6 @@ public class DatabaseConnector : MonoBehaviour
         }
         finally
         {
-            if (reader != null && reader.IsClosed)
-            {
-                reader.Close();
-            }
             dbcon.Close();
         }
 
@@ -196,7 +184,7 @@ public class DatabaseConnector : MonoBehaviour
 
         return count;
     }
-    public bool CheckUserPassword(int userId, string pass)
+    public bool CheckUserPassword(long userId, string pass)
     {
         if (dbcon == null)
         {
@@ -231,14 +219,14 @@ public class DatabaseConnector : MonoBehaviour
 
         return String.IsNullOrWhiteSpace(pass) ? false : password.Equals(pass);
     }
-    public int GetUserId(string login)
+    public long GetUserId(string login)
     {
         if (dbcon == null)
         {
             ConnectToDatabase();
         }
 
-        int id = -1;
+        long id = -1;
         IDataReader reader = null;
         try
         {
@@ -249,7 +237,7 @@ public class DatabaseConnector : MonoBehaviour
             dbcmd.CommandText = query;
             reader = dbcmd.ExecuteReader();
             reader.Read();
-            id = Int32.Parse(reader[0].ToString());
+            id = long.Parse(reader[0].ToString());
         }
         catch (Exception ex)
         {
@@ -300,7 +288,7 @@ public class DatabaseConnector : MonoBehaviour
 
         return result;
     }
-    public string FindExistingToken(int userId)
+    public string FindExistingToken(long userId)
     {
         if (dbcon == null)
         {
@@ -383,7 +371,7 @@ public class DatabaseConnector : MonoBehaviour
 
         return count;
     }
-    public bool AssignToken(int sessionId, int userId)
+    public bool AssignToken(long sessionId, long userId)
     {
         if (dbcon == null)
         {
@@ -411,31 +399,24 @@ public class DatabaseConnector : MonoBehaviour
 
         return true;
     }
-    public int AddNewToken(string token)
+    public long AddNewToken(string token)
     {
         if (dbcon == null)
         {
             ConnectToDatabase();
         }
 
-        int sessionId = -1;
+        long sessionId = -1;
         IDataReader reader = null;
         try
         {
             dbcon.Open();
 
             //Insert new session
-            string query = $"INSERT INTO Sessions(Token, LastUsed, ValidUntil) VALUES('{token}', datetime('now'), datetime('now', '+{(Globals.SessionTimeoutInHours)} hour'))";
+            string query = $"INSERT INTO Sessions(Token, LastUsed, ValidUntil) VALUES('{token}', datetime('now'), datetime('now', '+{(Globals.SessionTimeoutInHours)} hour'));SELECT last_insert_rowid();";
             IDbCommand dbcmd = dbcon.CreateCommand();
             dbcmd.CommandText = query;
-            dbcmd.ExecuteNonQuery();
-
-            //Get resulting id
-            query = $"SELECT Id FROM Sessions WHERE Token='{token}'";
-            dbcmd.CommandText = query;
-            reader = dbcmd.ExecuteReader();
-            reader.Read();
-            sessionId = Int32.Parse(reader[0].ToString());
+            sessionId = (long)dbcmd.ExecuteScalar();
         }
         catch (Exception ex)
         {
@@ -457,7 +438,7 @@ public class DatabaseConnector : MonoBehaviour
 
     #region Gampeplay
     
-    public List<GameplaySpot> GetSpots(Vector2 StartPos, Vector2 EndPos)
+    public List<GameplaySpot> GetSpots()
     {
         if (dbcon == null)
         {
@@ -491,6 +472,58 @@ public class DatabaseConnector : MonoBehaviour
         }
 
         return result;
+    }
+
+    public PlayerData GetPlayerData()
+    {
+        return null;
+    }
+
+    public bool ResetPlayerData(long userId)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        bool success = false;
+        IDataReader reader = null;
+        try
+        {
+            dbcon.Open();
+
+            //Remove existing PlayerData
+            string query = $"DELETE FROM PlayerData WHERE ROWID IN (SELECT a.ROWID FROM PlayerData a INNER JOIN UserAccounts b ON (a.Id=b.PlayerDataId ) WHERE b.Id={userId});";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            dbcmd.ExecuteNonQuery();
+
+            //Insert PlayerData
+            query = $"INSERT INTO PlayerData(Value, LastLatitude, LastLongitude) VALUES({Globals.PlayerInitialValue}, 0, 0);SELECT last_insert_rowid();";
+            dbcmd.CommandText = query;
+            long playerDataId = (long)dbcmd.ExecuteScalar();
+
+            //Assign to user
+            query = $"UPDATE UserAccounts SET PlayerDataId={playerDataId} WHERE Id={userId}";
+            dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            dbcmd.ExecuteNonQuery();
+        }
+        catch (Exception ex)
+        {
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+            success = false;
+        }
+        finally
+        {
+            if (reader != null && reader.IsClosed)
+            {
+                reader.Close();
+            }
+            dbcon.Close();
+        }
+
+        return success;
     }
 
     #endregion

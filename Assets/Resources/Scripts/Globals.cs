@@ -1,10 +1,36 @@
-﻿using System.Collections;
+﻿using System;
+using System.Text;
+using System.Collections;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using UnityEngine;
 using Mirror;
 
 public static class Globals
 {
+    #region ext
+
+    public static string ToBase64(this object obj)
+    {
+        string json = JsonConvert.SerializeObject(obj);
+
+        byte[] bytes = Encoding.Default.GetBytes(json);
+
+        return Convert.ToBase64String(bytes);
+    }
+
+    public static T FromBase64<T>(this string base64Text)
+    {
+        byte[] bytes = Convert.FromBase64String(base64Text);
+
+        string json = Encoding.Default.GetString(bytes);
+
+        return JsonConvert.DeserializeObject<T>(json);
+    }
+
+    #endregion
+
+    public static int PlayerInitialValue = 1000;
     public static string ServerAddress = "localhost";
     public static ushort NetworkingPort = 7777;
     public static string SqliteConnectionString = "URI=file:" + Application.persistentDataPath + "/database.db";

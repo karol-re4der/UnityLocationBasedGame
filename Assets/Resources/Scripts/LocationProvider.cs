@@ -37,7 +37,7 @@ public class LocationProvider : MonoBehaviour
         Vector2 result = new Vector2(0, 0);
         if (Application.isEditor)
         {
-            Debug.Log("Mockup location taken: " + mockupLocation.x + ":" + mockupLocation.y);
+            //Debug.Log("Mockup location taken: " + mockupLocation.x + ":" + mockupLocation.y);
             return mockupLocation;
         }
         else
@@ -51,7 +51,7 @@ public class LocationProvider : MonoBehaviour
                 else
                 {
                     result = new Vector2(Input.location.lastData.latitude, Input.location.lastData.longitude);
-                    Debug.Log("Location taken: " + result.x + ":" + result.y);
+                    //Debug.Log("Location taken: " + result.x + ":" + result.y);
                 }
             }
         }
