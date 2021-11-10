@@ -247,7 +247,7 @@ public class DatabaseConnector : MonoBehaviour
             reader.Read();
             id = Int32.Parse(reader[0].ToString());
         }
-        catch (SqliteException ex)
+        catch (Exception ex)
         {
 
         }

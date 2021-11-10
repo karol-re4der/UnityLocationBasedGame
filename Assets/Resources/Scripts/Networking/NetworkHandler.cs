@@ -15,7 +15,6 @@ public class NetworkHandler : NetworkManager
         public string Type;
         public string Content;
     }
-    private string Token = "";
     private int LastMessageValue = 0;
     public bool IsHost = false;
 
@@ -49,8 +48,21 @@ public class NetworkHandler : NetworkManager
 
     public override void OnClientConnect(NetworkConnection conn)
     {
-        Globals.GetDebugConsole().LogMessage("Connected to server");
-        Globals.GetLoader().Exit();
+        string token = PlayerPrefs.GetString("Token", "");
+        if (String.IsNullOrWhiteSpace(token))
+        {
+            Globals.GetDebugConsole().LogMessage("Connected to server - no existing session");
+            Globals.GetLoader().Exit();
+        }
+        else
+        {
+            Globals.GetDebugConsole().LogMessage("Connected to server - checking existing session");
+
+            dynamic obj = new ExpandoObject();
+            obj.token = token;
+            string message = JsonConvert.SerializeObject(obj);
+            Globals.GetNetworkManager().SendMessageToServer("CHECK", message);
+        }
     }
 
     public override void OnClientDisconnect(NetworkConnection conn)
@@ -104,7 +116,7 @@ public class NetworkHandler : NetworkManager
 
         if (result)
         {
-            Token = message;
+            PlayerPrefs.SetString("Token", message);
             Globals.GetDebugConsole().LogMessage("REGISTER successful. New session token: " + message);
             Globals.GetStartupManager().EnterGameView();
         }
@@ -123,7 +135,7 @@ public class NetworkHandler : NetworkManager
 
         if (result)
         {
-            Token = message;
+            PlayerPrefs.SetString("Token", message);
             Globals.GetDebugConsole().LogMessage("AUTH successful!");
             Globals.GetStartupManager().EnterGameView();
         }
@@ -136,7 +148,21 @@ public class NetworkHandler : NetworkManager
 
     private void Client_CHECK(MessagePacket msg)
     {
+        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+        string message = obj.success?"":obj.msg;
+        bool result = obj.success;
 
+        if (result)
+        {
+            Globals.GetDebugConsole().LogMessage("CHECK successful!");
+            Globals.GetStartupManager().EnterGameView();
+        }
+        else
+        {
+            Globals.GetPrompt().ShowMessage(message);
+            Globals.GetDebugConsole().LogMessage("CHECK failed: " + message);
+        }
+        Globals.GetLoader().Exit();
     }
 
     public void SendMessageToServer(string type, string content)
@@ -288,7 +314,18 @@ public class NetworkHandler : NetworkManager
 
     private void Server_CHECK(NetworkConnection conn, MessagePacket msg)
     {
+        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+        string token = obj.token;
 
+        bool result = Globals.GetDatabaseConnector().TokenInUse(token);
+        if (result)
+        {
+            SendMessageToClient((NetworkConnectionToClient)conn, "CHECK", "{\"success\": true}");
+        }
+        else
+        {
+            SendMessageToClient((NetworkConnectionToClient)conn, "CHECK", "{\"success\": false, \"msg\": \"Token not in use or session timed out\"}");
+        }
     }
 
     public void SendMessageToClient(NetworkConnectionToClient conn, string type, string text)
