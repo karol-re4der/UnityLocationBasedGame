@@ -33,7 +33,7 @@ public class RegisterMenu : SubMenu
         }
 
         //Request token
-        Globals.GetNetworkManager().SendMessageToServer("REGISTER", JsonUtility.ToJson(ud));
+        Globals.GetNetworkManager().SendMessageToServer("REGISTER", ClientAPI.Prepare_REGISTER(ud));
     }
 
     public void Button_Return()

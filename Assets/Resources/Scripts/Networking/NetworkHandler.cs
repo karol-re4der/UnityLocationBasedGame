@@ -58,9 +58,7 @@ public class NetworkHandler : NetworkManager
         {
             Globals.GetDebugConsole().LogMessage("Connected to server - checking existing session");
 
-            dynamic obj = new ExpandoObject();
-            obj.token = token;
-            string message = JsonConvert.SerializeObject(obj);
+            string message = ClientAPI.Prepare_CHECK(token);
             Globals.GetNetworkManager().SendMessageToServer("CHECK", message);
         }
     }
@@ -118,7 +116,8 @@ public class NetworkHandler : NetworkManager
         {
             PlayerPrefs.SetString("Token", message);
             Globals.GetDebugConsole().LogMessage("REGISTER successful. New session token: " + message);
-            GameObject.Find("Canvas").transform.Find("Startup View/Menus/Register Menu").GetComponent<LoginMenu>().Exit();
+            GameObject.Find("Canvas").transform.Find("Startup View/Menus/Register Menu").GetComponent<RegisterMenu>().Exit();
+            GameObject.Find("Canvas").transform.Find("Startup View/Menus/Startup Menu").GetComponent<StartupMenu>().Enter();
             Globals.GetStartupManager().EnterGameView();
         }
         else
@@ -139,6 +138,7 @@ public class NetworkHandler : NetworkManager
             PlayerPrefs.SetString("Token", message);
             Globals.GetDebugConsole().LogMessage("AUTH successful!");
             GameObject.Find("Canvas").transform.Find("Startup View/Menus/Login Menu").GetComponent<LoginMenu>().Exit();
+            GameObject.Find("Canvas").transform.Find("Startup View/Menus/Startup Menu").GetComponent<StartupMenu>().Enter();
             Globals.GetStartupManager().EnterGameView();
         }
         else
@@ -161,7 +161,6 @@ public class NetworkHandler : NetworkManager
         }
         else
         {
-            Globals.GetPrompt().ShowMessage(message);
             Globals.GetDebugConsole().LogMessage("CHECK failed: " + message);
         }
         Globals.GetLoader().Exit();
@@ -254,7 +253,7 @@ public class NetworkHandler : NetworkManager
                 string newToken = GenerateToken();
                 if (!String.IsNullOrWhiteSpace(newToken))
                 {
-                    if (!Globals.GetDatabaseConnector().UserExists(ud))
+                    if (Globals.GetDatabaseConnector().UserExists(ud)==0)
                     {
                         int userId = Globals.GetDatabaseConnector().InsertNewUser(ud);
                         int sessionId = Globals.GetDatabaseConnector().InsertNewSession(newToken);
@@ -319,7 +318,7 @@ public class NetworkHandler : NetworkManager
         dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
         string token = obj.token;
 
-        bool result = Globals.GetDatabaseConnector().TokenInUse(token);
+        bool result = Globals.GetDatabaseConnector().TokenInUse(token)==1;
         if (result)
         {
             SendMessageToClient((NetworkConnectionToClient)conn, "CHECK", "{\"success\": true}");
@@ -358,12 +357,13 @@ public class NetworkHandler : NetworkManager
         {
             if (attempts > 10)
             {
+                Globals.GetDatabaseConnector().LogInDatabase("ServerErr", "Token generation failed");
                 return "";
             }
 
             newToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Substring(0, 16);
             attempts++;
-        } while (Globals.GetDatabaseConnector().TokenInUse(newToken));
+        } while (Globals.GetDatabaseConnector().TokenInUse(newToken)>0);
 
         return newToken;
     }

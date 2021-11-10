@@ -8,6 +8,7 @@ public static class Globals
     public static string ServerAddress = "localhost";
     public static ushort NetworkingPort = 7777;
     public static string SqliteConnectionString = "URI=file:" + Application.persistentDataPath + "/database.db";
+    public static int SessionTimeoutInHours = 1;
 
     public static LoaderScreen GetLoader()
     {

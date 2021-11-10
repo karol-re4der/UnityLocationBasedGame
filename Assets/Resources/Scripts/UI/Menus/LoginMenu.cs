@@ -25,10 +25,7 @@ public class LoginMenu : SubMenu
         }
 
         //Request authentication
-        dynamic obj = new ExpandoObject();
-        obj.login = login;
-        obj.pass = password;
-        string message = JsonConvert.SerializeObject(obj);
+        string message = ClientAPI.Prepare_AUTH(login, password);
         Globals.GetNetworkManager().SendMessageToServer("AUTH", message);
     }
 
