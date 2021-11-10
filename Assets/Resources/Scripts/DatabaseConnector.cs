@@ -12,7 +12,7 @@ public class DatabaseConnector : MonoBehaviour
 {
     private IDbConnection dbcon;
 
-
+    #region Misc
     public void ConnectToDatabase()
     {
         if (Globals.GetNetworkManager().mode==NetworkManagerMode.ServerOnly)
@@ -36,7 +36,6 @@ public class DatabaseConnector : MonoBehaviour
             this.enabled = false;
         }
     }
-
     public bool LogInDatabase(string type, string content)
     {
         if (dbcon==null)
@@ -67,7 +66,6 @@ public class DatabaseConnector : MonoBehaviour
 
         return result;
     }
-
     public int GetNextMessageId()
     {
         if (dbcon == null)
@@ -113,6 +111,230 @@ public class DatabaseConnector : MonoBehaviour
         return value;
     }
 
+    #endregion
+
+    #region Accounts
+
+    public int InsertNewUser(UserData user)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        int userId = -1;
+        IDataReader reader = null;
+        try
+        {
+            dbcon.Open();
+
+            //Insert user
+            string query = $"INSERT INTO UserAccounts(Name, Surname, Nickname, Email, Password) VALUES('{user.Name}','{user.Surname}','{user.Nickname}','{user.Email}','{user.Password}')";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            dbcmd.ExecuteNonQuery();
+
+            //Get resulting user id
+            query = $"SELECT Id FROM UserAccounts WHERE Nickname='{user.Nickname}'";
+            dbcmd.CommandText = query;
+            reader = dbcmd.ExecuteReader();
+            reader.Read();
+            userId = Int32.Parse(reader[0].ToString());
+        }
+        catch (Exception ex)
+        {
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+        }
+        finally
+        {
+            if (reader != null && reader.IsClosed)
+            {
+                reader.Close();
+            }
+            dbcon.Close();
+        }
+
+        return userId;
+    }
+    public int UserExists(UserData ud)
+    {
+        //Return values legend:
+        //0 - not existing
+        //1 - exists
+        //Other - something went wrong
+
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        int count = -1;
+        IDataReader reader = null;
+        try
+        {
+            dbcon.Open();
+
+            string query = $"SELECT Count(*) FROM UserAccounts WHERE Email='{ud.Email}' OR Nickname='{ud.Nickname}'";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            reader = dbcmd.ExecuteReader();
+            reader.Read();
+            count = Int32.Parse(reader[0].ToString());
+        }
+        catch (Exception ex)
+        {
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+        }
+        finally
+        {
+            if (reader != null && reader.IsClosed)
+            {
+                reader.Close();
+            }
+            dbcon.Close();
+        }
+
+        return count;
+    }
+    public bool CheckUserPassword(int userId, string pass)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        string password = "";
+        IDataReader reader = null;
+        try
+        {
+            dbcon.Open();
+
+            string query = $"SELECT password FROM UserAccounts WHERE Id='{userId}'";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            reader = dbcmd.ExecuteReader();
+            reader.Read();
+            password = reader[0].ToString();
+        }
+        catch (Exception ex)
+        {
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+        }
+        finally
+        {
+            if (reader != null && reader.IsClosed)
+            {
+                reader.Close();
+            }
+            dbcon.Close();
+        }
+
+        return String.IsNullOrWhiteSpace(pass) ? false : password.Equals(pass);
+    }
+    public int GetUserId(string login)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        int id = -1;
+        IDataReader reader = null;
+        try
+        {
+            dbcon.Open();
+
+            string query = $"SELECT Id FROM UserAccounts WHERE Nickname='{login}' OR Email='{login}'";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            reader = dbcmd.ExecuteReader();
+            reader.Read();
+            id = Int32.Parse(reader[0].ToString());
+        }
+        catch (Exception ex)
+        {
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+        }
+        finally
+        {
+            if (reader != null && reader.IsClosed)
+            {
+                reader.Close();
+            }
+            dbcon.Close();
+        }
+
+        return id;
+    }
+
+    #endregion
+
+    #region Token
+
+    public bool RefreshToken(string token)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        bool result = true;
+        try
+        {
+            dbcon.Open();
+
+            string query = $"UPDATE Sessions SET LastUsed='{DateTime.Now}', ValidUntil='{DateTime.Now.AddHours(Globals.SessionTimeoutInHours)}' WHERE Token='{token}'";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            dbcmd.ExecuteNonQuery();
+        }
+        catch (Exception ex)
+        {
+            result = false;
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+        }
+        finally
+        {
+            dbcon.Close();
+        }
+
+        return result;
+    }
+    public string FindExistingToken(int userId)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        string token = "";
+        IDataReader reader = null;
+        try
+        {
+            dbcon.Open();
+
+            string query = $"SELECT s.Token FROM Sessions s JOIN UserAccounts a ON a.SessionId=s.Id WHERE a.Id={userId}";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            reader = dbcmd.ExecuteReader();
+            reader.Read();
+            token = reader[0].ToString();
+        }
+        catch (Exception ex)
+        {
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+        }
+        finally
+        {
+            if (reader != null && reader.IsClosed)
+            {
+                reader.Close();
+            }
+            dbcon.Close();
+        }
+
+        return token;
+    }
     public int TokenInUse(string token)
     {
         //Return values legend:
@@ -128,7 +350,7 @@ public class DatabaseConnector : MonoBehaviour
         int count = -1;
         IDataReader reader = null;
         try
-        { 
+        {
             dbcon.Open();
 
             //Clean timed out sessions
@@ -138,7 +360,7 @@ public class DatabaseConnector : MonoBehaviour
             dbcmd.ExecuteNonQuery();
 
             //Get session
-            query = "SELECT Count(*) FROM Sessions WHERE Token='"+token+"'";
+            query = "SELECT Count(*) FROM Sessions WHERE Token='" + token + "'";
             dbcmd = dbcon.CreateCommand();
             dbcmd.CommandText = query;
             reader = dbcmd.ExecuteReader();
@@ -161,8 +383,35 @@ public class DatabaseConnector : MonoBehaviour
 
         return count;
     }
+    public bool AssignToken(int sessionId, int userId)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
 
-    public int InsertNewSession(string token)
+        try
+        {
+            dbcon.Open();
+
+            string query = $"UPDATE UserAccounts SET SessionId={sessionId} WHERE Id={userId}";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            dbcmd.ExecuteNonQuery();
+        }
+        catch (Exception ex)
+        {
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+            return false;
+        }
+        finally
+        {
+            dbcon.Close();
+        }
+
+        return true;
+    }
+    public int AddNewToken(string token)
     {
         if (dbcon == null)
         {
@@ -204,253 +453,5 @@ public class DatabaseConnector : MonoBehaviour
         return sessionId;
     }
 
-    public int InsertNewUser(UserData user)
-    {
-        if (dbcon == null)
-        {
-            ConnectToDatabase();
-        }
-
-        int userId = -1;
-        IDataReader reader = null;
-        try
-        { 
-            dbcon.Open();
-
-            //Insert user
-            string query = $"INSERT INTO UserAccounts(Name, Surname, Nickname, Email, Password) VALUES('{user.Name}','{user.Surname}','{user.Nickname}','{user.Email}','{user.Password}')";
-            IDbCommand dbcmd = dbcon.CreateCommand();
-            dbcmd.CommandText = query;
-            dbcmd.ExecuteNonQuery();
-
-            //Get resulting user id
-            query = $"SELECT Id FROM UserAccounts WHERE Nickname='{user.Nickname}'";
-            dbcmd.CommandText = query;
-            reader = dbcmd.ExecuteReader();
-            reader.Read();
-            userId = Int32.Parse(reader[0].ToString());
-        }
-        catch (Exception ex)
-        {
-            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
-        }
-        finally
-        {
-            if (reader != null && reader.IsClosed)
-            {
-                reader.Close();
-            }
-            dbcon.Close();
-        }
-
-        return userId;
-    }
-
-    public int UserExists(UserData ud)
-    { 
-        //Return values legend:
-        //0 - not existing
-        //1 - exists
-        //Other - something went wrong
-
-        if (dbcon == null)
-        {
-            ConnectToDatabase();
-        }
-
-        int count = -1;
-        IDataReader reader = null;
-        try
-        {
-            dbcon.Open();
-
-            string query = $"SELECT Count(*) FROM UserAccounts WHERE Email='{ud.Email}' OR Nickname='{ud.Nickname}'";
-            IDbCommand dbcmd = dbcon.CreateCommand();
-            dbcmd.CommandText = query;
-            reader = dbcmd.ExecuteReader();
-            reader.Read();
-            count = Int32.Parse(reader[0].ToString());
-        }
-        catch (Exception ex)
-        {
-            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
-        }
-        finally
-        {
-            if (reader != null && reader.IsClosed)
-            {
-                reader.Close();
-            }
-            dbcon.Close();
-        }
-
-        return count;
-    }
-
-    public bool AssignSession(int sessionId, int userId)
-    {
-        if (dbcon == null)
-        {
-            ConnectToDatabase();
-        }
-
-        try
-        {
-            dbcon.Open();
-
-            string query = $"UPDATE UserAccounts SET SessionId={sessionId} WHERE Id={userId}";
-            IDbCommand dbcmd = dbcon.CreateCommand();
-            dbcmd.CommandText = query;
-            dbcmd.ExecuteNonQuery();
-        }
-        catch (Exception ex)
-        {
-            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
-            return false;
-        }
-        finally
-        {
-            dbcon.Close();
-        }
-
-        return true;
-    }
-
-    public bool CheckUserPassword(int userId, string pass)
-    {
-        if (dbcon == null)
-        {
-            ConnectToDatabase();
-        }
-
-        string password = "";
-        IDataReader reader = null;
-        try 
-        { 
-            dbcon.Open();
-
-            string query = $"SELECT password FROM UserAccounts WHERE Id='{userId}'";
-            IDbCommand dbcmd = dbcon.CreateCommand();
-            dbcmd.CommandText = query;
-            reader = dbcmd.ExecuteReader();
-            reader.Read();
-            password = reader[0].ToString();
-        }
-        catch (Exception ex)
-        {
-            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
-        }
-        finally
-        {
-            if (reader != null && reader.IsClosed)
-            {
-                reader.Close();
-            }
-            dbcon.Close();
-        }
-
-        return String.IsNullOrWhiteSpace(pass)?false:password.Equals(pass);
-    }
-
-    public int FindUser(string login)
-    {
-        if (dbcon == null)
-        {
-            ConnectToDatabase();
-        }
-
-        int id = -1;
-        IDataReader reader = null;
-        try
-        {
-            dbcon.Open();
-
-            string query = $"SELECT Id FROM UserAccounts WHERE Nickname='{login}' OR Email='{login}'";
-            IDbCommand dbcmd = dbcon.CreateCommand();
-            dbcmd.CommandText = query;
-            reader = dbcmd.ExecuteReader();
-            reader.Read();
-            id = Int32.Parse(reader[0].ToString());
-        }
-        catch (Exception ex)
-        {
-            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
-        }
-        finally
-        {
-            if (reader != null && reader.IsClosed)
-            {
-                reader.Close();
-            }
-            dbcon.Close();
-        }
-
-        return id;
-    }
-
-    public string FindExistingToken(int userId)
-    {
-        if (dbcon == null)
-        {
-            ConnectToDatabase();
-        }
-
-        string token = "";
-        IDataReader reader = null;
-        try
-        {
-            dbcon.Open();
-
-            string query = $"SELECT s.Token FROM Sessions s JOIN UserAccounts a ON a.SessionId=s.Id WHERE a.Id={userId}";
-            IDbCommand dbcmd = dbcon.CreateCommand();
-            dbcmd.CommandText = query;
-            reader = dbcmd.ExecuteReader();
-            reader.Read();
-            token = reader[0].ToString();
-        }
-        catch (Exception ex)
-        {
-            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
-        }
-        finally
-        {
-            if (reader != null && reader.IsClosed)
-            {
-                reader.Close();
-            }
-            dbcon.Close();
-        }
-
-        return token;
-    }
-
-    public bool RefreshSession(string token)
-    {
-        if (dbcon == null)
-        {
-            ConnectToDatabase();
-        }
-
-        bool result = true;
-        try
-        {
-            dbcon.Open();
-
-            string query = $"UPDATE Sessions SET LastUsed='{DateTime.Now}', ValidUntil='{DateTime.Now.AddHours(Globals.SessionTimeoutInHours)}' WHERE Token='{token}'";
-            IDbCommand dbcmd = dbcon.CreateCommand();
-            dbcmd.CommandText = query;
-            dbcmd.ExecuteNonQuery();
-        }
-        catch (Exception ex)
-        {
-            result = false;
-            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
-        }
-        finally
-        {
-            dbcon.Close();
-        }
-
-        return result;
-    }
+    #endregion
 }

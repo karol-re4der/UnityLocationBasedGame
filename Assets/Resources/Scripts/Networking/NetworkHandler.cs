@@ -256,8 +256,8 @@ public class NetworkHandler : NetworkManager
                     if (Globals.GetDatabaseConnector().UserExists(ud)==0)
                     {
                         int userId = Globals.GetDatabaseConnector().InsertNewUser(ud);
-                        int sessionId = Globals.GetDatabaseConnector().InsertNewSession(newToken);
-                        Globals.GetDatabaseConnector().AssignSession(sessionId, userId);
+                        int sessionId = Globals.GetDatabaseConnector().AddNewToken(newToken);
+                        Globals.GetDatabaseConnector().AssignToken(sessionId, userId);
                         SendMessageToClient((NetworkConnectionToClient)conn, "REGISTER", "{\"success\": true, \"msg\": \"" + newToken + "\"}");
                     }
                     else
@@ -287,7 +287,7 @@ public class NetworkHandler : NetworkManager
         string login = obj.login;
         string pass = obj.pass;
 
-        int userId = Globals.GetDatabaseConnector().FindUser(login);
+        int userId = Globals.GetDatabaseConnector().GetUserId(login);
         if (userId >= 0)
         {
             if (Globals.GetDatabaseConnector().CheckUserPassword(userId, pass))
@@ -296,8 +296,15 @@ public class NetworkHandler : NetworkManager
                 if (String.IsNullOrWhiteSpace(sessionToken))
                 {
                     sessionToken = GenerateToken();
-                    int sessionId = Globals.GetDatabaseConnector().InsertNewSession(sessionToken);
-                    Globals.GetDatabaseConnector().AssignSession(sessionId, userId);
+                    if (String.IsNullOrWhiteSpace(sessionToken))
+                    {
+                        SendMessageToClient((NetworkConnectionToClient)conn, "AUTH", "{\"success\": false, \"msg\": \"Server error.\"}");
+                        return;
+                    }
+
+                    Globals.GetDatabaseConnector().RefreshToken(sessionToken);
+                    int sessionId = Globals.GetDatabaseConnector().AddNewToken(sessionToken);
+                    Globals.GetDatabaseConnector().AssignToken(sessionId, userId);
                 }
 
                 SendMessageToClient((NetworkConnectionToClient)conn, "AUTH", "{\"success\": true, \"msg\": \"" + sessionToken + "\"}");
