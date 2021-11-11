@@ -40,13 +40,7 @@ public class NetworkHandler : NetworkManager
 
     void Update()
     {
-        //Gameplay loops here
-    }
 
-    public void Testfunc()
-    {
-        string message = ClientAPI.Prepare_UPD(Globals.GetMap().GetComponent<MapRenderer>().Bounds, PlayerPrefs.GetString("Token", ""));
-        SendMessageToServer("UPD", message);
     }
 
     #region Client
@@ -192,10 +186,25 @@ public class NetworkHandler : NetworkManager
         List<GameplaySpot> spots = obj.spots.ToObject<List<GameplaySpot>>();
         PlayerData pd = obj.pd;
 
-        foreach(GameplaySpot spot in spots)
+        List<GameplaySpotInstance> existingSpots = Globals.GetMap().GetComponentsInChildren<GameplaySpotInstance>().ToList<GameplaySpotInstance>();
+
+        //Delete out of range spots
+        foreach(GameplaySpotInstance spot in existingSpots)
         {
-            GameObject newPin = (GameObject)GameObject.Instantiate(Resources.Load("Prefabs/Spot Pin"), Globals.GetMap().transform);
-            newPin.GetComponent<GameplaySpotInstance>().Init(spot);
+            if (!spots.Exists((x)=>x.Id==spot.data.Id))
+            {
+                GameObject.Destroy(spot);
+            }
+        }
+
+        //Instantiate new in range spots
+        foreach (GameplaySpot spot in spots)
+        {
+            if(!existingSpots.Exists((x) => x.data.Id == spot.Id))
+            {
+                GameObject newPin = (GameObject)GameObject.Instantiate(Resources.Load("Prefabs/Spot Pin"), Globals.GetMap().transform);
+                newPin.GetComponent<GameplaySpotInstance>().Init(spot);
+            }
         }
 
     }
