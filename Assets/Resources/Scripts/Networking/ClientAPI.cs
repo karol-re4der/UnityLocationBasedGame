@@ -34,7 +34,10 @@ public static class ClientAPI
     public static string Prepare_UPD(GeoBoundingBox bounds, string token)
     {
         dynamic obj = new ExpandoObject();
-        obj.bounds = bounds.ToBase64();
+        obj.p1lat = (double)bounds.BottomLeft.LatitudeInDegrees;
+        obj.p1lon = (double)bounds.BottomLeft.LongitudeInDegrees;
+        obj.p2lat = (double)bounds.TopRight.LatitudeInDegrees;
+        obj.p2lon = (double)bounds.TopRight.LongitudeInDegrees;
         obj.token = token;
         string message = JsonConvert.SerializeObject(obj);
 

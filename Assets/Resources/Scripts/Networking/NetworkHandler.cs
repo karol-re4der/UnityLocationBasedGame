@@ -192,7 +192,6 @@ public class NetworkHandler : NetworkManager
         List<GameplaySpot> spots = ((string)obj.spots).FromBase64<List<GameplaySpot>>();
         PlayerData pd = obj.pd;
 
-        Debug.Log(spots.ToString());
     }
 
     private void Client_KILL(MessagePacket msg)
@@ -382,8 +381,13 @@ public class NetworkHandler : NetworkManager
     private void Server_UPD(NetworkConnection conn, MessagePacket msg)
     {
         dynamic msgObj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
-        GeoBoundingBox bounds = ((string)msgObj.bounds).FromBase64<GeoBoundingBox>();
+        LatLon bottomLeft = new LatLon(msgObj.p1lat, msgObj.p1lon);
+        LatLon topRight = new LatLon(msgObj.p2lat, msgObj.p2lon);
         string token = msgObj.token;
+        GeoBoundingBoxBuilder growBox = new GeoBoundingBoxBuilder();
+        growBox.Grow(bottomLeft);
+        growBox.Grow(topRight);
+        GeoBoundingBox bounds = growBox.ToGeoBoundingBox();
 
         if (Globals.GetDatabaseConnector().TokenInUse(token)==1)
         {
@@ -393,7 +397,20 @@ public class NetworkHandler : NetworkManager
             PlayerData pd = Globals.GetDatabaseConnector().GetPlayerData();
 
             dynamic resObj = new ExpandoObject();
-            resObj.spots = spots.Where((x)=>bounds.Intersects(x.coords)).ToBase64();
+
+            foreach(GameplaySpot gs in spots)
+            {
+                if (bounds.Intersects(gs.Coords))
+                {
+                    Debug.Log(gs.Name);
+                }
+                else
+                {
+                    Debug.Log("SAD");
+                }
+            }
+
+            resObj.spots = spots.Where((x)=>bounds.Intersects(x.Coords)).ToBase64();
             resObj.pd = pd;
             string message = JsonConvert.SerializeObject(resObj);
 

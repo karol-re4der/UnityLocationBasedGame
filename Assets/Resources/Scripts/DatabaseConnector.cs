@@ -6,6 +6,7 @@ using Mono.Data.Sqlite;
 using System.IO;
 using System;
 using System.Data.SqlClient;
+using Microsoft.Geospatial;
 using Mirror;
 
 public class DatabaseConnector : MonoBehaviour
@@ -451,12 +452,28 @@ public class DatabaseConnector : MonoBehaviour
         {
             dbcon.Open();
 
-            string query = $"";
+            string query = "SELECT Name, Description, Value, Latitude, Longitude, OwnerId FROM Spots";
             IDbCommand dbcmd = dbcon.CreateCommand();
             dbcmd.CommandText = query;
-            //reader = dbcmd.ExecuteReader();
-            //reader.Read();
-            //token = reader[0].ToString();
+            reader = dbcmd.ExecuteReader();
+            while (reader.Read())
+            {
+                string name = reader[0].ToString();
+                string desc = reader[1].ToString();
+                int value = Int32.Parse(reader[2].ToString());
+                double lat = double.Parse(reader[3].ToString());
+                double lon = double.Parse(reader[4].ToString());
+                LatLon coords = new LatLon(lat, lon);
+
+                GameplaySpot nextSpot = new GameplaySpot
+                {
+                    Name = name,
+                    Description = desc,
+                    Value = value,
+                    Coords = coords
+                };
+                result.Add(nextSpot);
+            }
         }
         catch (Exception ex)
         {

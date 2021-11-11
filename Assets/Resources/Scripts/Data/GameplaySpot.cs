@@ -5,5 +5,8 @@ using Microsoft.Geospatial;
 
 public class GameplaySpot
 {
-    public LatLon coords;
+    public LatLon Coords;
+    public string Name;
+    public string Description;
+    public int Value;
 }
