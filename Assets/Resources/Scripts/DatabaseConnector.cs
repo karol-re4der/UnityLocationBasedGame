@@ -452,25 +452,29 @@ public class DatabaseConnector : MonoBehaviour
         {
             dbcon.Open();
 
-            string query = "SELECT Name, Description, Value, Latitude, Longitude, OwnerId FROM Spots";
+            string query = "SELECT Id, Name, Description, Value, Latitude, Longitude, OwnerId FROM Spots";
             IDbCommand dbcmd = dbcon.CreateCommand();
             dbcmd.CommandText = query;
             reader = dbcmd.ExecuteReader();
             while (reader.Read())
             {
-                string name = reader[0].ToString();
-                string desc = reader[1].ToString();
-                int value = Int32.Parse(reader[2].ToString());
-                double lat = double.Parse(reader[3].ToString());
-                double lon = double.Parse(reader[4].ToString());
+                long id = long.Parse(reader[0].ToString());
+                string name = reader[1].ToString();
+                string desc = reader[2].ToString();
+                int value = Int32.Parse(reader[3].ToString());
+                double lat = double.Parse(reader[4].ToString());
+                double lon = double.Parse(reader[5].ToString());
                 LatLon coords = new LatLon(lat, lon);
+                long ownerId = long.Parse(reader[6].ToString());
 
                 GameplaySpot nextSpot = new GameplaySpot
                 {
+                    Id = id,
                     Name = name,
                     Description = desc,
                     Value = value,
-                    Coords = coords
+                    Coords = coords,
+                    OwnerId = ownerId
                 };
                 result.Add(nextSpot);
             }

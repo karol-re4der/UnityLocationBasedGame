@@ -192,6 +192,12 @@ public class NetworkHandler : NetworkManager
         List<GameplaySpot> spots = ((string)obj.spots).FromBase64<List<GameplaySpot>>();
         PlayerData pd = obj.pd;
 
+        foreach(GameplaySpot spot in spots)
+        {
+            GameObject newPin = (GameObject)GameObject.Instantiate(Resources.Load("Prefabs/Spot Pin"), Globals.GetMap().transform);
+            newPin.GetComponent<GameplaySpotInstance>().Init(spot);
+        }
+
     }
 
     private void Client_KILL(MessagePacket msg)
@@ -397,18 +403,6 @@ public class NetworkHandler : NetworkManager
             PlayerData pd = Globals.GetDatabaseConnector().GetPlayerData();
 
             dynamic resObj = new ExpandoObject();
-
-            foreach(GameplaySpot gs in spots)
-            {
-                if (bounds.Intersects(gs.Coords))
-                {
-                    Debug.Log(gs.Name);
-                }
-                else
-                {
-                    Debug.Log("SAD");
-                }
-            }
 
             resObj.spots = spots.Where((x)=>bounds.Intersects(x.Coords)).ToBase64();
             resObj.pd = pd;
