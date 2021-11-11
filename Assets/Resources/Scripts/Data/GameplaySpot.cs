@@ -5,10 +5,20 @@ using Microsoft.Geospatial;
 
 public class GameplaySpot
 {
+    public LatLon Coords
+    {
+        get
+        {
+            return new LatLon(Lat, Lon);
+        }
+    }
+
     public long Id;
-    public LatLon Coords;
     public string Name;
     public string Description;
     public int Value;
     public long OwnerId;
+
+    public double Lat;
+    public double Lon;
 }

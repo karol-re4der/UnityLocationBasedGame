@@ -464,8 +464,8 @@ public class DatabaseConnector : MonoBehaviour
                 int value = Int32.Parse(reader[3].ToString());
                 double lat = double.Parse(reader[4].ToString());
                 double lon = double.Parse(reader[5].ToString());
-                LatLon coords = new LatLon(lat, lon);
-                long ownerId = long.Parse(reader[6].ToString());
+                long ownerId = -1;
+                long.TryParse(reader[6].ToString(), out ownerId);
 
                 GameplaySpot nextSpot = new GameplaySpot
                 {
@@ -473,7 +473,8 @@ public class DatabaseConnector : MonoBehaviour
                     Name = name,
                     Description = desc,
                     Value = value,
-                    Coords = coords,
+                    Lat = lat,
+                    Lon = lon,
                     OwnerId = ownerId
                 };
                 result.Add(nextSpot);

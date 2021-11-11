@@ -189,7 +189,7 @@ public class NetworkHandler : NetworkManager
     private void Client_UPD(MessagePacket msg)
     {
         dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
-        List<GameplaySpot> spots = ((string)obj.spots).FromBase64<List<GameplaySpot>>();
+        List<GameplaySpot> spots = obj.spots.ToObject<List<GameplaySpot>>();
         PlayerData pd = obj.pd;
 
         foreach(GameplaySpot spot in spots)
@@ -404,7 +404,7 @@ public class NetworkHandler : NetworkManager
 
             dynamic resObj = new ExpandoObject();
 
-            resObj.spots = spots.Where((x)=>bounds.Intersects(x.Coords)).ToBase64();
+            resObj.spots = spots.Where((x)=>bounds.Intersects(x.Coords)).ToArray();
             resObj.pd = pd;
             string message = JsonConvert.SerializeObject(resObj);
 
