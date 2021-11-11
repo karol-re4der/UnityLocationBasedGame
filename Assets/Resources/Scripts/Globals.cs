@@ -8,7 +8,7 @@ using Mirror;
 
 public static class Globals
 {
-    public static int IntervalInSeconds_UPD = 3;
+    public static int IntervalInSeconds_UPD = 10;
     public static int PlayerInitialValue = 1000;
     public static string ServerAddress = "localhost";
     public static ushort NetworkingPort = 7777;

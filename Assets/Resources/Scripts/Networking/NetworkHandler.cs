@@ -18,7 +18,8 @@ public class NetworkHandler : NetworkManager
         public string Type;
         public string Content;
     }
-    private int LastMessageValue = 0;
+    private bool _beenConnected = false;
+    private int _lastMessageValue = 0;
     public bool IsHost = false;
 
     void Start()
@@ -46,7 +47,7 @@ public class NetworkHandler : NetworkManager
     #region Client
     public override void OnStartClient()
     {
-        Globals.GetDebugConsole().LogMessage("Client started");
+        Globals.GetDebugConsole().LogMessage("Attempting to connect...");
     }
 
     public override void OnStopClient()
@@ -56,6 +57,8 @@ public class NetworkHandler : NetworkManager
 
     public override void OnClientConnect(NetworkConnection conn)
     {
+        _beenConnected = true;
+
         string token = PlayerPrefs.GetString("Token", "");
         if (String.IsNullOrWhiteSpace(token))
         {
@@ -73,8 +76,12 @@ public class NetworkHandler : NetworkManager
 
     public override void OnClientDisconnect(NetworkConnection conn)
     {
-        Globals.GetDebugConsole().LogMessage("Disconnected from server");
-        Globals.GetLoader().Enter("Reconnecting");
+        Globals.GetDebugConsole().LogMessage("No server connection");
+        if (_beenConnected)
+        { 
+            Globals.GetLoader().Enter("Reconnecting");
+        }
+        Invoke("StartClient", 1);
     }
 
     public override void OnClientError(Exception exception)
@@ -216,10 +223,10 @@ public class NetworkHandler : NetworkManager
 
     public void SendMessageToServer(string type, string content)
     {
-        LastMessageValue++;
+        _lastMessageValue++;
         MessagePacket msg = new MessagePacket
         {
-            MessageId = LastMessageValue,
+            MessageId = _lastMessageValue,
             Type = type,
             Content = content
         };
