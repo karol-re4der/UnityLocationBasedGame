@@ -10,6 +10,7 @@ public static class Globals
 {
     public static int IntervalInSeconds_UPD = 10;
     public static int PlayerInitialValue = 1000;
+    public static int PlayerBaseIncome = 1;
     public static string ServerAddress = "localhost";
     public static ushort NetworkingPort = 7777;
     public static string SqliteConnectionString = "URI=file:" + Application.persistentDataPath + "/database.db";
@@ -53,5 +54,11 @@ public static class Globals
     public static InputHandler GetInput()
     {
         return Camera.main.GetComponent<InputHandler>();
+    }
+
+    public static ClientLogic GetClientLogic()
+    {
+        return GameObject.Find("Logic").GetComponent<ClientLogic>();
+
     }
 }

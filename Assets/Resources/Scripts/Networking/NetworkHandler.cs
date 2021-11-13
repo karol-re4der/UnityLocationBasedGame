@@ -12,7 +12,7 @@ using Microsoft.Maps.Unity;
 
 public class NetworkHandler : NetworkManager
 {
-    public struct MessagePacket: NetworkMessage
+    public struct MessagePacket : NetworkMessage
     {
         public int MessageId;
         public string Type;
@@ -78,7 +78,7 @@ public class NetworkHandler : NetworkManager
     {
         Globals.GetDebugConsole().LogMessage("No server connection");
         if (_beenConnected)
-        { 
+        {
             Globals.GetLoader().Enter("Reconnecting");
         }
         Invoke("StartClient", 1);
@@ -86,7 +86,7 @@ public class NetworkHandler : NetworkManager
 
     public override void OnClientError(Exception exception)
     {
-        Globals.GetDebugConsole().LogMessage("Connection error: "+exception.Message);
+        Globals.GetDebugConsole().LogMessage("Connection error: " + exception.Message);
     }
 
     public void SetupClientCallbacks()
@@ -144,7 +144,7 @@ public class NetworkHandler : NetworkManager
         else
         {
             Globals.GetPrompt().ShowMessage(message);
-            Globals.GetDebugConsole().LogMessage("REGISTER failed: "+message);
+            Globals.GetDebugConsole().LogMessage("REGISTER failed: " + message);
         }
     }
 
@@ -172,7 +172,7 @@ public class NetworkHandler : NetworkManager
     private void Client_CHECK(MessagePacket msg)
     {
         dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
-        string message = obj.success?"":obj.msg;
+        string message = obj.success ? "" : obj.msg;
         bool result = obj.success;
 
         if (result)
@@ -191,14 +191,15 @@ public class NetworkHandler : NetworkManager
     {
         dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
         List<GameplaySpot> spots = obj.spots.ToObject<List<GameplaySpot>>();
-        PlayerData pd = obj.pd;
+        Globals.GetClientLogic().LatestPlayerData = obj.pd.ToObject<PlayerData>();
+        Globals.GetClientLogic().LatestPlayerData.Init();
 
         List<GameplaySpotInstance> existingSpots = Globals.GetMap().GetComponentsInChildren<GameplaySpotInstance>().ToList<GameplaySpotInstance>();
 
         //Delete out of range spots
-        foreach(GameplaySpotInstance spot in existingSpots)
+        foreach (GameplaySpotInstance spot in existingSpots)
         {
-            if (!spots.Exists((x)=>x.Id==spot.data.Id))
+            if (!spots.Exists((x) => x.Id == spot.data.Id))
             {
                 GameObject.Destroy(spot);
             }
@@ -207,13 +208,12 @@ public class NetworkHandler : NetworkManager
         //Instantiate new in range spots
         foreach (GameplaySpot spot in spots)
         {
-            if(!existingSpots.Exists((x) => x.data.Id == spot.Id))
+            if (!existingSpots.Exists((x) => x.data.Id == spot.Id))
             {
                 GameObject newPin = (GameObject)GameObject.Instantiate(Resources.Load("Prefabs/Spot Pin"), Globals.GetMap().transform);
                 newPin.GetComponent<GameplaySpotInstance>().Init(spot);
             }
         }
-
     }
 
     private void Client_KILL(MessagePacket msg)
@@ -267,11 +267,11 @@ public class NetworkHandler : NetworkManager
     {
         Globals.GetDebugConsole().LogMessage("ServerErr" + exception.Message);
     }
- 
+
     public void HandleMessageFromClient(NetworkConnection conn, MessagePacket msg)
     {
         //Diagnostics
-        string debugText = "Message " + msg.MessageId + " from " + conn.address + " received. Content: "+msg.Content;
+        string debugText = "Message " + msg.MessageId + " from " + conn.address + " received. Content: " + msg.Content;
         Globals.GetDebugConsole().LogMessage(debugText);
         Globals.GetDatabaseConnector().LogInDatabase("MSG", debugText);
 
@@ -311,7 +311,7 @@ public class NetworkHandler : NetworkManager
                 string newToken = GenerateToken();
                 if (!String.IsNullOrWhiteSpace(newToken))
                 {
-                    if (Globals.GetDatabaseConnector().UserExists(ud)==0)
+                    if (Globals.GetDatabaseConnector().UserExists(ud) == 0)
                     {
                         long userId = Globals.GetDatabaseConnector().InsertNewUser(ud);
                         long sessionId = Globals.GetDatabaseConnector().AddNewToken(newToken);
@@ -353,7 +353,7 @@ public class NetworkHandler : NetworkManager
             if (Globals.GetDatabaseConnector().CheckUserPassword(userId, pass))
             {
                 string sessionToken = Globals.GetDatabaseConnector().FindExistingToken(userId);
-                if (String.IsNullOrWhiteSpace(sessionToken) || Globals.GetDatabaseConnector().TokenInUse(sessionToken)!=1)
+                if (String.IsNullOrWhiteSpace(sessionToken) || Globals.GetDatabaseConnector().TokenInUse(sessionToken) != 1)
                 {
                     sessionToken = GenerateToken();
                     if (String.IsNullOrWhiteSpace(sessionToken))
@@ -388,7 +388,7 @@ public class NetworkHandler : NetworkManager
         dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
         string token = obj.token;
 
-        bool result = Globals.GetDatabaseConnector().TokenInUse(token)==1;
+        bool result = Globals.GetDatabaseConnector().TokenInUse(token) == 1;
         if (result)
         {
             Globals.GetDatabaseConnector().RefreshToken(token);
@@ -411,16 +411,31 @@ public class NetworkHandler : NetworkManager
         growBox.Grow(topRight);
         GeoBoundingBox bounds = growBox.ToGeoBoundingBox();
 
-        if (Globals.GetDatabaseConnector().TokenInUse(token)==1)
+        if (Globals.GetDatabaseConnector().TokenInUse(token) == 1)
         {
             Globals.GetDatabaseConnector().RefreshToken(token);
+            long userId = Globals.GetDatabaseConnector().TokenToUserId(token);
 
             List<GameplaySpot> spots = Globals.GetDatabaseConnector().GetSpots();
-            PlayerData pd = Globals.GetDatabaseConnector().GetPlayerData();
+            PlayerData pd = Globals.GetDatabaseConnector().GetPlayerData(userId);
+
+            if (bounds.Center.LatitudeInDegrees != 0 && bounds.Center.LongitudeInDegrees != 0)
+            {
+                if (!Globals.GetDatabaseConnector().UpdatePlayerPos(pd.PlayerDataId, bounds.Center))
+                {
+                    SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Server error\"}");
+                    return;
+                }
+            }
+            if (spots == null)
+            {
+                SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Server error\"}");
+                return;
+            }
 
             dynamic resObj = new ExpandoObject();
 
-            resObj.spots = spots.Where((x)=>bounds.Intersects(x.Coords)).ToArray();
+            resObj.spots = spots.Where((x) => bounds.Intersects(x.Coords)).ToArray();
             resObj.pd = pd;
             string message = JsonConvert.SerializeObject(resObj);
 
@@ -444,6 +459,7 @@ public class NetworkHandler : NetworkManager
         };
 
         conn.Send(msg);
+        Globals.GetDatabaseConnector().LogInDatabase("MSG", $"Message of type {type} sent to {conn.address}, content: {text}");
     }
 
     public void SetupServerCallbacks()
@@ -466,7 +482,7 @@ public class NetworkHandler : NetworkManager
 
             newToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Substring(0, 16);
             attempts++;
-        } while (Globals.GetDatabaseConnector().TokenInUse(newToken)>0);
+        } while (Globals.GetDatabaseConnector().TokenInUse(newToken) > 0);
 
         return newToken;
     }

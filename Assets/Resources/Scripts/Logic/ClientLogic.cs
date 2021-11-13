@@ -4,10 +4,16 @@ using UnityEngine;
 using System;
 using Microsoft.Geospatial;
 using Microsoft.Maps.Unity;
+using TMPro;
 
 public class ClientLogic : MonoBehaviour
 {
     private DateTime nextTick;
+    private DateTime nextInterfaceUpdate;
+
+    public TextMeshProUGUI PlayerValueText;
+    public TextMeshProUGUI PlayerIncomeText;
+    public PlayerData LatestPlayerData;
 
     void Start()
     {
@@ -28,6 +34,23 @@ public class ClientLogic : MonoBehaviour
                 Globals.GetNetworkManager().SendMessageToServer("UPD", message);
                 nextTick = DateTime.Now.AddSeconds(Globals.IntervalInSeconds_UPD);
             }
+        }
+
+        RefreshInterface();
+    }
+
+    void RefreshInterface()
+    {
+        if(DateTime.Now> nextInterfaceUpdate)
+        {
+            if (LatestPlayerData != null)
+            {
+                LatestPlayerData.Update();
+                PlayerValueText.text = "" + LatestPlayerData.ValueUpdated;
+                PlayerIncomeText.text = "" + LatestPlayerData.IncomePerSecond;
+            }
+
+            nextInterfaceUpdate = DateTime.Now.AddSeconds(1);
         }
     }
 }

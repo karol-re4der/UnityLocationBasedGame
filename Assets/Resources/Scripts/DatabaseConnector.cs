@@ -8,6 +8,7 @@ using System;
 using System.Data.SqlClient;
 using Microsoft.Geospatial;
 using Mirror;
+using System.Globalization;
 
 public class DatabaseConnector : MonoBehaviour
 {
@@ -16,7 +17,7 @@ public class DatabaseConnector : MonoBehaviour
     #region Misc
     public void ConnectToDatabase()
     {
-        if (Globals.GetNetworkManager().mode==NetworkManagerMode.ServerOnly)
+        if (Globals.GetNetworkManager().mode == NetworkManagerMode.ServerOnly)
         {
             try
             {
@@ -39,7 +40,7 @@ public class DatabaseConnector : MonoBehaviour
     }
     public bool LogInDatabase(string type, string content)
     {
-        if (dbcon==null)
+        if (dbcon == null)
         {
             ConnectToDatabase();
         }
@@ -54,10 +55,10 @@ public class DatabaseConnector : MonoBehaviour
             dbcmd.CommandText = query;
             dbcmd.ExecuteNonQuery();
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             result = false;
-            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: "+ex.Message);
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
         }
         finally
         {
@@ -102,7 +103,7 @@ public class DatabaseConnector : MonoBehaviour
         }
         finally
         {
-            if (reader!=null && reader.IsClosed)
+            if (reader != null && reader.IsClosed)
             {
                 reader.Close();
             }
@@ -434,11 +435,44 @@ public class DatabaseConnector : MonoBehaviour
 
         return sessionId;
     }
+    public long TokenToUserId(string token)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
 
+        long userId = -1;
+        IDataReader reader = null;
+        try
+        {
+            dbcon.Open();
+
+            //Insert new session
+            string query = $"SELECT ua.Id FROM UserAccounts ua LEFT JOIN Sessions se ON ua.SessionId=se.Id WHERE se.Token='{token}'";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            userId = (long)dbcmd.ExecuteScalar();
+        }
+        catch (Exception ex)
+        {
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+        }
+        finally
+        {
+            if (reader != null && reader.IsClosed)
+            {
+                reader.Close();
+            }
+            dbcon.Close();
+        }
+
+        return userId;
+    }
     #endregion
 
-    #region Gampeplay
-    
+    #region Gameplay
+
     public List<GameplaySpot> GetSpots()
     {
         if (dbcon == null)
@@ -496,19 +530,161 @@ public class DatabaseConnector : MonoBehaviour
         return result;
     }
 
-    public PlayerData GetPlayerData()
-    {
-        return null;
-    }
-
-    public bool ResetPlayerData(long userId)
+    public PlayerData GetPlayerData(long userId)
     {
         if (dbcon == null)
         {
             ConnectToDatabase();
         }
 
-        bool success = false;
+        PlayerData result = null;
+        IDataReader reader = null;
+        try
+        {
+            dbcon.Open();
+
+            string query = $"SELECT pd.Id, pd.Value, pd.IncomePerSecond FROM UserAccounts ua JOIN PlayerData pd ON ua.PlayerDataId=pd.Id WHERE ua.Id={userId}";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            reader = dbcmd.ExecuteReader();
+            while (reader.Read())
+            {
+                long id = long.Parse(reader[0].ToString());
+                int value = Int32.Parse(reader[1].ToString());
+                int income = Int32.Parse(reader[2].ToString());
+
+                result = new PlayerData
+                {
+                    PlayerDataId = id,
+                    Value = value,
+                    IncomePerSecond = income
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+        }
+        finally
+        {
+            if (reader != null && reader.IsClosed)
+            {
+                reader.Close();
+            }
+            dbcon.Close();
+        }
+
+        return result;
+    }
+
+    public bool UpdatePlayerData(PlayerData newData)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        try
+        {
+            dbcon.Open();
+
+            string query = $"UPDATE PlayerData SET Value={newData.Value}, IncomePerSecond={newData.IncomePerSecond} WHERE Id={newData.PlayerDataId}";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            dbcmd.ExecuteNonQuery();
+        }
+        catch (Exception ex)
+        {
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+            return false;
+        }
+        finally
+        {
+            dbcon.Close();
+        }
+
+        return true;
+    }
+
+    public bool UpdatePlayerPos(long playerDataId, LatLon coords)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        try
+        {
+            dbcon.Open();
+
+            string lat = coords.LatitudeInDegrees.ToString("0.0000000000000", CultureInfo.InvariantCulture);
+            string lon = coords.LatitudeInDegrees.ToString("0.0000000000000", CultureInfo.InvariantCulture);
+            string query = $"UPDATE PlayerData SET LastLatitude={lat}, LastLongitude={lon} WHERE Id={playerDataId}";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            dbcmd.ExecuteNonQuery();
+        }
+        catch (Exception ex)
+        {
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+            return false;
+        }
+        finally
+        {
+            dbcon.Close();
+        }
+
+        return true;
+    }
+
+    public List<long> GetUserIds()
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        List<long> result = new List<long>();
+        IDataReader reader = null;
+        try
+        {
+            dbcon.Open();
+
+            string query = "SELECT Id FROM UserAccounts";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            reader = dbcmd.ExecuteReader();
+            while (reader.Read())
+            {
+                long id = long.Parse(reader[0].ToString());
+                result.Add(id);
+            }
+        }
+        catch (Exception ex)
+        {
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+            result = null;
+        }
+        finally
+        {
+            if (reader != null && reader.IsClosed)
+            {
+                reader.Close();
+            }
+            dbcon.Close();
+        }
+
+        return result;
+    }
+
+    public long ResetPlayerData(long userId)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        long playerDataId = -1;
         IDataReader reader = null;
         try
         {
@@ -523,7 +699,7 @@ public class DatabaseConnector : MonoBehaviour
             //Insert PlayerData
             query = $"INSERT INTO PlayerData(Value, LastLatitude, LastLongitude) VALUES({Globals.PlayerInitialValue}, 0, 0);SELECT last_insert_rowid();";
             dbcmd.CommandText = query;
-            long playerDataId = (long)dbcmd.ExecuteScalar();
+            playerDataId = (long)dbcmd.ExecuteScalar();
 
             //Assign to user
             query = $"UPDATE UserAccounts SET PlayerDataId={playerDataId} WHERE Id={userId}";
@@ -534,7 +710,6 @@ public class DatabaseConnector : MonoBehaviour
         catch (Exception ex)
         {
             Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
-            success = false;
         }
         finally
         {
@@ -545,7 +720,44 @@ public class DatabaseConnector : MonoBehaviour
             dbcon.Close();
         }
 
-        return success;
+        return playerDataId;
+    }
+
+    public int CountPlayerIncome(long userId)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        int income = 0;
+        IDataReader reader = null;
+        try
+        {
+            dbcon.Open();
+
+            string query = $"SELECT SUM(Value)+{Globals.PlayerBaseIncome} FROM Spots WHERE OwnerId={userId}";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            reader = dbcmd.ExecuteReader();
+
+            income = Int32.Parse(reader[0].ToString());
+        }
+        catch (Exception ex)
+        {
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+            return 0;
+        }
+        finally
+        {
+            if (reader != null && reader.IsClosed)
+            {
+                reader.Close();
+            }
+            dbcon.Close();
+        }
+
+        return income;
     }
 
     #endregion
