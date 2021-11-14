@@ -36,6 +36,19 @@ public class StartupManager : MonoBehaviour
 
     public void ExitGameView()
     {
+        //Clear pins
+        foreach (Transform trans in Globals.GetMap().transform)
+        {
+            if (trans.GetComponent<SpotPin>())
+            {
+                GameObject.Destroy(trans.gameObject);
+            }
+            if (trans.GetComponent<NonPlayerPin>())
+            {
+                GameObject.Destroy(trans.gameObject);
+            }
+        }
+
         //Hide game view elements
         foreach (GameObject obj in GameplayGameObjects)
         {
