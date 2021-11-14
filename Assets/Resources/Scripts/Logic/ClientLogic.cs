@@ -11,8 +11,7 @@ public class ClientLogic : MonoBehaviour
     private DateTime nextTick;
     private DateTime nextInterfaceUpdate;
 
-    public TextMeshProUGUI PlayerValueText;
-    public TextMeshProUGUI PlayerIncomeText;
+    public TextMeshProUGUI ValueText;
     public PlayerData LatestPlayerData;
     public UserData LatestUserData;
 
@@ -20,8 +19,7 @@ public class ClientLogic : MonoBehaviour
     {
         LatestUserData = null;
         LatestPlayerData = null;
-        PlayerValueText.text = "";
-        PlayerIncomeText.text = "";
+        ValueText.text = "";
     }
 
     public void Init()
@@ -74,8 +72,8 @@ public class ClientLogic : MonoBehaviour
             if (LatestPlayerData != null)
             {
                 LatestPlayerData.Update();
-                PlayerValueText.text = "" + LatestPlayerData.ValueUpdated;
-                PlayerIncomeText.text = "" + LatestPlayerData.IncomePerSecond;
+                string text = $"{LatestPlayerData.ValueUpdated}{Globals.ValueChar} {((LatestPlayerData.IncomePerSecond<0)?'-':'+')} {LatestPlayerData.IncomePerSecond} {Globals.ValueChar}/s";
+                ValueText.text = text;
             }
 
             nextInterfaceUpdate = DateTime.Now.AddSeconds(1);
