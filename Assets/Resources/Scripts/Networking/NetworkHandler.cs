@@ -204,7 +204,7 @@ public class NetworkHandler : NetworkManager
         {
             if (!spots.Exists((x) => x.Id == spot.Data.Id))
             {
-                GameObject.Destroy(spot);
+                GameObject.Destroy(spot.gameObject);
             }
         }
 
@@ -223,7 +223,7 @@ public class NetworkHandler : NetworkManager
         //{
         //    if (!nonPlayers.Exists((x) => x.UserId == np.Data.UserId))
         //    {
-        //        GameObject.Destroy(np);
+        //        GameObject.Destroy(np.gameObject);
         //    }
         //}
 
