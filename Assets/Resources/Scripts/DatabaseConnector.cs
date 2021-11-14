@@ -344,7 +344,8 @@ public class DatabaseConnector : MonoBehaviour
             dbcon.Open();
 
             //Clean timed out sessions
-            string query = $"DELETE FROM Sessions WHERE ValidUntil<datetime('now')";
+            string query = $"UPDATE UserAccounts SET SessionId=NULL WHERE SessionId in (SELECT Id FROM Sessions WHERE ValidUntil<datetime('now')); " +
+                           $"DELETE FROM Sessions WHERE ValidUntil<datetime('now');";
             IDbCommand dbcmd = dbcon.CreateCommand();
             dbcmd.CommandText = query;
             dbcmd.ExecuteNonQuery();
