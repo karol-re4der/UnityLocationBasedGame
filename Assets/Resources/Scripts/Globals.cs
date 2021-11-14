@@ -19,12 +19,12 @@ public static class Globals
 
     public static LocationUpdater GetLocationUpdater()
     {
-        return GameObject.Find("Gameplay Space").GetComponent<LocationUpdater>();
+        return GetMap().GetComponent<LocationUpdater>();
     }
 
     public static LocationProvider GetLocationProvider()
     {
-        return GameObject.Find("Gameplay Space").GetComponent<LocationProvider>();
+        return GetMap().GetComponent<LocationProvider>();
     }
 
     public static LoaderScreen GetLoader()
@@ -54,7 +54,7 @@ public static class Globals
 
     public static GameObject GetMap()
     {
-        return GameObject.Find("Gameplay Space/Map");
+        return GameObject.Find("Gameplay Space").transform.Find("Map").gameObject;
     }
 
     public static DebugMode GetDebugConsole()

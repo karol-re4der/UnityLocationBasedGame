@@ -2,36 +2,30 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Linq;
+using TMPro;
 
 public class StartupManager : MonoBehaviour
 {
-    public List<GameObject> GameplayGameObjects;
-    public List<MonoBehaviour> GameplayComponents;
-
-    public List<GameObject> StartupGameObjects;
-    public List<MonoBehaviour> StartupComponents;
-
     public void EnterGameView()
     {
-        //Close startup view elements
-        foreach (GameObject obj in StartupGameObjects)
+        //Clear text fields
+        foreach(TMP_InputField field in GameObject.Find("Canvas").transform.Find("Startup View/Menus/Login Menu/Content").gameObject.GetComponentsInChildren<TMP_InputField>())
         {
-            obj.SetActive(false);
+            field.text = "";
         }
-        foreach (MonoBehaviour com in StartupComponents)
+        foreach (TMP_InputField field in GameObject.Find("Canvas").transform.Find("Startup View/Menus/Register Menu/Content").gameObject.GetComponentsInChildren<TMP_InputField>())
         {
-            com.enabled = false;
+            field.text = "";
         }
 
+        //Close startup view elements
+        GameObject.Find("Canvas").transform.Find("Startup View").gameObject.SetActive(false);
+
         //Open game view elements
-        foreach (GameObject obj in GameplayGameObjects)
-        {
-            obj.SetActive(true);
-        }
-        foreach (MonoBehaviour com in GameplayComponents)
-        {
-            com.enabled = true;
-        }
+        GameObject.Find("Canvas").transform.Find("Game View").gameObject.SetActive(true);
+        Globals.GetMap().SetActive(true);
+        Globals.GetInput().enabled = true;
     }
 
     public void ExitGameView()
@@ -49,24 +43,12 @@ public class StartupManager : MonoBehaviour
             }
         }
 
-        //Hide game view elements
-        foreach (GameObject obj in GameplayGameObjects)
-        {
-            obj.SetActive(false);
-        }
-        foreach (MonoBehaviour com in GameplayComponents)
-        {
-            com.enabled = false;
-        }
+        //Close game view elements
+        GameObject.Find("Canvas").transform.Find("Startup View").gameObject.SetActive(false);
+        Globals.GetMap().SetActive(false);
+        Globals.GetInput().enabled = false;
 
         //Open startup view elements
-        foreach (GameObject obj in StartupGameObjects)
-        {
-            obj.SetActive(true);
-        }
-        foreach (MonoBehaviour com in StartupComponents)
-        {
-            com.enabled = true;
-        }
+        GameObject.Find("Canvas").transform.Find("Startup View").gameObject.SetActive(true);
     }
 }
