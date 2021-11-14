@@ -17,6 +17,16 @@ public static class Globals
     public static int SessionTimeoutInHours = 1;
     public static int NonPlayerVisibilityInSeconds = 20;
 
+    public static LocationUpdater GetLocationUpdater()
+    {
+        return GameObject.Find("Gameplay Space").GetComponent<LocationUpdater>();
+    }
+
+    public static LocationProvider GetLocationProvider()
+    {
+        return GameObject.Find("Gameplay Space").GetComponent<LocationProvider>();
+    }
+
     public static LoaderScreen GetLoader()
     {
         return GameObject.Find("Canvas").transform.Find("Loading Overlay").GetComponent<LoaderScreen>();

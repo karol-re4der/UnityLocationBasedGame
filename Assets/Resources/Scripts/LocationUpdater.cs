@@ -24,11 +24,16 @@ public class LocationUpdater : MonoBehaviour
     {
         if ((DateTime.Now - timestamp).Seconds > UpdateInterval)
         {
-            Vector3 locationAsVector = Provider.GetLocation();
-            LatLon location = new LatLon(locationAsVector.x, locationAsVector.y);
-            Map.Center = location;
-            Map.transform.Find("Player Pin").GetComponent<MapPin>().Location = location;
-            timestamp = DateTime.Now;
+            UpdateNow();
         }
+    }
+
+    public void UpdateNow()
+    {
+        Vector3 locationAsVector = Provider.GetLocation();
+        LatLon location = new LatLon(locationAsVector.x, locationAsVector.y);
+        Map.Center = location;
+        Map.transform.Find("Player Pin").GetComponent<MapPin>().Location = location;
+        timestamp = DateTime.Now;
     }
 }

@@ -22,6 +22,21 @@ public class ClientLogic : MonoBehaviour
         {
             enabled = false;
         }
+        else
+        {
+            Invoke("InitialUpdate", 1);
+        }
+    }
+
+    private void InitialUpdate()
+    {
+        if (Globals.GetMap()?.activeSelf == true && !Globals.GetLoader().IsOn())
+        {
+            Globals.GetLocationUpdater().UpdateNow();
+            string message = ClientAPI.Prepare_UPD(Globals.GetMap().GetComponent<MapRenderer>().Bounds, PlayerPrefs.GetString("Token", ""));
+            Globals.GetNetworkManager().SendMessageToServer("UPD", message);
+            nextTick = DateTime.Now.AddSeconds(Globals.IntervalInSeconds_UPD);
+        }
     }
 
     void Update()
