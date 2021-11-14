@@ -5,6 +5,10 @@ using System;
 
 public class SettingsMenu : SubMenu
 {
+    public void Button_Sound()
+    {
+
+    }
     public void Button_Exit()
     {
         Application.Quit();
