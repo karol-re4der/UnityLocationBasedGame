@@ -219,13 +219,13 @@ public class NetworkHandler : NetworkManager
         }
 
         //Delete outdated/outranged players 
-        //foreach (NonPlayerPin np in existingNonPlayers)
-        //{
-        //    if (!nonPlayers.Exists((x) => x.UserId == np.Data.UserId))
-        //    {
-        //        GameObject.Destroy(np.gameObject);
-        //    }
-        //}
+        foreach (NonPlayerPin np in existingNonPlayers)
+        {
+            if (!nonPlayers.Exists((x) => x.UserId == np.Data.UserId))
+            {
+                GameObject.Destroy(np.gameObject);
+            }
+        }
 
         //Instantiate new players in range OR update the position
         foreach (NonPlayerData nonPlayer in nonPlayers)
