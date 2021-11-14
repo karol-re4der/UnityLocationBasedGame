@@ -190,28 +190,54 @@ public class NetworkHandler : NetworkManager
     private void Client_UPD(MessagePacket msg)
     {
         dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
-        List<GameplaySpot> spots = obj.spots.ToObject<List<GameplaySpot>>();
+        List<SpotData> spots = obj.spots.ToObject<List<SpotData>>();
+        List<NonPlayerData> nonPlayers = obj.nonPlayers.ToObject<List<NonPlayerData>>();
         Globals.GetClientLogic().LatestPlayerData = obj.pd.ToObject<PlayerData>();
         Globals.GetClientLogic().LatestPlayerData.Init();
 
-        List<GameplaySpotInstance> existingSpots = Globals.GetMap().GetComponentsInChildren<GameplaySpotInstance>().ToList<GameplaySpotInstance>();
+        List<SpotPin> existingSpots = Globals.GetMap().GetComponentsInChildren<SpotPin>().ToList<SpotPin>();
+        List<NonPlayerPin> existingNonPlayers = Globals.GetMap().GetComponentsInChildren<NonPlayerPin>().ToList<NonPlayerPin>();
+
 
         //Delete out of range spots
-        foreach (GameplaySpotInstance spot in existingSpots)
+        foreach (SpotPin spot in existingSpots)
         {
-            if (!spots.Exists((x) => x.Id == spot.data.Id))
+            if (!spots.Exists((x) => x.Id == spot.Data.Id))
             {
                 GameObject.Destroy(spot);
             }
         }
 
         //Instantiate new in range spots
-        foreach (GameplaySpot spot in spots)
+        foreach (SpotData spot in spots)
         {
-            if (!existingSpots.Exists((x) => x.data.Id == spot.Id))
+            if (!existingSpots.Exists((x) => x.Data.Id == spot.Id))
             {
                 GameObject newPin = (GameObject)GameObject.Instantiate(Resources.Load("Prefabs/Spot Pin"), Globals.GetMap().transform);
-                newPin.GetComponent<GameplaySpotInstance>().Init(spot);
+                newPin.GetComponent<SpotPin>().Init(spot);
+            }
+        }
+
+        //Delete outdated/outranged players 
+        //foreach (NonPlayerPin np in existingNonPlayers)
+        //{
+        //    if (!nonPlayers.Exists((x) => x.UserId == np.Data.UserId))
+        //    {
+        //        GameObject.Destroy(np);
+        //    }
+        //}
+
+        //Instantiate new players in range OR update the position
+        foreach (NonPlayerData nonPlayer in nonPlayers)
+        {
+            if (!existingNonPlayers.Exists((x) => x.Data.UserId == nonPlayer.UserId))
+            {
+                GameObject newNonPlayer = (GameObject)GameObject.Instantiate(Resources.Load("Prefabs/Player Pin"), Globals.GetMap().transform);
+                newNonPlayer.GetComponent<NonPlayerPin>().Init(nonPlayer);
+            }
+            else if (existingNonPlayers.Exists((x) => x.Data.UserId == nonPlayer.UserId))
+            {
+                existingNonPlayers.Find((x) => x.Data.UserId == nonPlayer.UserId).Init(nonPlayer);
             }
         }
     }
@@ -416,7 +442,8 @@ public class NetworkHandler : NetworkManager
             Globals.GetDatabaseConnector().RefreshToken(token);
             long userId = Globals.GetDatabaseConnector().TokenToUserId(token);
 
-            List<GameplaySpot> spots = Globals.GetDatabaseConnector().GetSpots();
+            List<SpotData> spots = Globals.GetDatabaseConnector().GetSpots();
+            List<NonPlayerData> nonPlayers = Globals.GetDatabaseConnector().GetNonPlayers(userId);
             PlayerData pd = Globals.GetDatabaseConnector().GetPlayerData(userId);
 
             if (bounds.Center.LatitudeInDegrees != 0 && bounds.Center.LongitudeInDegrees != 0)
@@ -432,10 +459,16 @@ public class NetworkHandler : NetworkManager
                 SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Server error\"}");
                 return;
             }
+            if (nonPlayers == null)
+            {
+                SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Server error\"}");
+                return;
+            }
 
             dynamic resObj = new ExpandoObject();
 
             resObj.spots = spots.Where((x) => bounds.Intersects(x.Coords)).ToArray();
+            resObj.nonPlayers = nonPlayers.Where((x) => bounds.Intersects(x.Coords)).ToArray();
             resObj.pd = pd;
             string message = JsonConvert.SerializeObject(resObj);
 

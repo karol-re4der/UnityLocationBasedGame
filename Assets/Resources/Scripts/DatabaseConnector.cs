@@ -473,14 +473,14 @@ public class DatabaseConnector : MonoBehaviour
 
     #region Gameplay
 
-    public List<GameplaySpot> GetSpots()
+    public List<SpotData> GetSpots()
     {
         if (dbcon == null)
         {
             ConnectToDatabase();
         }
 
-        List<GameplaySpot> result = new List<GameplaySpot>();
+        List<SpotData> result = new List<SpotData>();
         IDataReader reader = null;
         try
         {
@@ -501,7 +501,7 @@ public class DatabaseConnector : MonoBehaviour
                 long ownerId = -1;
                 long.TryParse(reader[6].ToString(), out ownerId);
 
-                GameplaySpot nextSpot = new GameplaySpot
+                SpotData nextSpot = new SpotData
                 {
                     Id = id,
                     Name = name,
@@ -577,6 +577,54 @@ public class DatabaseConnector : MonoBehaviour
         return result;
     }
 
+    public List<NonPlayerData> GetNonPlayers(long userId)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        List<NonPlayerData> result = new List<NonPlayerData>();
+        IDataReader reader = null;
+        try
+        {
+            dbcon.Open();
+
+            string query = $"SELECT ua.Id, pd.LastLatitude, pd.LastLongitude FROM UserAccounts ua INNER JOIN Sessions se ON ua.SessionId = se.Id INNER JOIN PlayerData pd ON ua.PlayerDataId = pd.Id WHERE se.LastUsed > datetime('now', '-{(Globals.NonPlayerVisibilityInSeconds)} second') AND ua.Id !={ userId} AND (pd.LastLatitude!=0 AND pd.LastLongitude!=0)";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            reader = dbcmd.ExecuteReader();
+            while (reader.Read())
+            {
+                long id = long.Parse(reader[0].ToString());
+                double lat = double.Parse(reader[1].ToString());
+                double lon = double.Parse(reader[2].ToString());
+
+                NonPlayerData nextNonPlayer = new NonPlayerData
+                {
+                    UserId = id,
+                    Lat = lat,
+                    Lon = lon
+                };
+                result.Add(nextNonPlayer);
+            }
+        }
+        catch (Exception ex)
+        {
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+        }
+        finally
+        {
+            if (reader != null && reader.IsClosed)
+            {
+                reader.Close();
+            }
+            dbcon.Close();
+        }
+
+        return result;
+    }
+
     public bool UpdatePlayerData(PlayerData newData)
     {
         if (dbcon == null)
@@ -618,7 +666,7 @@ public class DatabaseConnector : MonoBehaviour
             dbcon.Open();
 
             string lat = coords.LatitudeInDegrees.ToString("0.0000000000000", CultureInfo.InvariantCulture);
-            string lon = coords.LatitudeInDegrees.ToString("0.0000000000000", CultureInfo.InvariantCulture);
+            string lon = coords.LongitudeInDegrees.ToString("0.0000000000000", CultureInfo.InvariantCulture);
             string query = $"UPDATE PlayerData SET LastLatitude={lat}, LastLongitude={lon} WHERE Id={playerDataId}";
             IDbCommand dbcmd = dbcon.CreateCommand();
             dbcmd.CommandText = query;
@@ -697,7 +745,7 @@ public class DatabaseConnector : MonoBehaviour
             dbcmd.ExecuteNonQuery();
 
             //Insert PlayerData
-            query = $"INSERT INTO PlayerData(Value, LastLatitude, LastLongitude) VALUES({Globals.PlayerInitialValue}, 0, 0);SELECT last_insert_rowid();";
+            query = $"INSERT INTO PlayerData(Value, IncomePerSecond, LastLatitude, LastLongitude) VALUES({Globals.PlayerInitialValue}, 0, 0, 0);SELECT last_insert_rowid();";
             dbcmd.CommandText = query;
             playerDataId = (long)dbcmd.ExecuteScalar();
 
@@ -736,7 +784,7 @@ public class DatabaseConnector : MonoBehaviour
         {
             dbcon.Open();
 
-            string query = $"SELECT SUM(Value)+{Globals.PlayerBaseIncome} FROM Spots WHERE OwnerId={userId}";
+            string query = $"SELECT IFNULL(SUM(Value), 0)+{Globals.PlayerBaseIncome} FROM Spots WHERE OwnerId={userId}";
             IDbCommand dbcmd = dbcon.CreateCommand();
             dbcmd.CommandText = query;
             reader = dbcmd.ExecuteReader();

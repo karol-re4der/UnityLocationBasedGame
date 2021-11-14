@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using Microsoft.Geospatial;
 
-public class GameplaySpot
+public class NonPlayerData
 {
+    public long UserId;
     public LatLon Coords
     {
         get
@@ -12,12 +13,6 @@ public class GameplaySpot
             return new LatLon(Lat, Lon);
         }
     }
-
-    public long Id;
-    public string Name;
-    public string Description;
-    public int Value;
-    public long OwnerId;
 
     public double Lat;
     public double Lon;

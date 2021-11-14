@@ -15,6 +15,7 @@ public static class Globals
     public static ushort NetworkingPort = 7777;
     public static string SqliteConnectionString = "URI=file:" + Application.persistentDataPath + "/database.db";
     public static int SessionTimeoutInHours = 1;
+    public static int NonPlayerVisibilityInSeconds = 20;
 
     public static LoaderScreen GetLoader()
     {
