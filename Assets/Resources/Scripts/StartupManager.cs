@@ -26,6 +26,9 @@ public class StartupManager : MonoBehaviour
         GameObject.Find("Canvas").transform.Find("Game View").gameObject.SetActive(true);
         Globals.GetMap().SetActive(true);
         Globals.GetInput().enabled = true;
+
+        //Start logic
+        Globals.GetClientLogic().Init();
     }
 
     public void ExitGameView()
@@ -50,5 +53,8 @@ public class StartupManager : MonoBehaviour
 
         //Open startup view elements
         GameObject.Find("Canvas").transform.Find("Startup View").gameObject.SetActive(true);
+
+        //Stop logic
+        Globals.GetClientLogic().Clean();
     }
 }

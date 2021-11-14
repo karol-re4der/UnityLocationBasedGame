@@ -256,6 +256,54 @@ public class DatabaseConnector : MonoBehaviour
 
         return id;
     }
+    public UserData GetUserData(long userId)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        UserData ud = null;
+        IDataReader reader = null;
+        try
+        {
+            dbcon.Open();
+
+            string query = $"SELECT Name, Surname, Nickname, Email FROM UserAccounts WHERE Id='{userId}'";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            reader = dbcmd.ExecuteReader();
+            while (reader.Read())
+            {
+                string name = reader[0].ToString();
+                string surname = reader[1].ToString();
+                string nickname = reader[2].ToString();
+                string email = reader[3].ToString();
+
+                ud = new UserData
+                {
+                    Name = name,
+                    Surname = surname,
+                    Nickname = nickname,
+                    Email = email
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+        }
+        finally
+        {
+            if (reader != null && reader.IsClosed)
+            {
+                reader.Close();
+            }
+            dbcon.Close();
+        }
+
+        return ud;
+    }
 
     #endregion
 

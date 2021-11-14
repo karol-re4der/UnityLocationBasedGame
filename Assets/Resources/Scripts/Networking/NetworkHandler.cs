@@ -118,6 +118,9 @@ public class NetworkHandler : NetworkManager
             case "KILL":
                 Client_KILL(msg);
                 break;
+            case "WHOAMI":
+                Client_WHOAMI(msg);
+                break;
             default:
                 return;
         }
@@ -247,6 +250,14 @@ public class NetworkHandler : NetworkManager
         //Get disconnected and die
     }
 
+    private void Client_WHOAMI(MessagePacket msg)
+    {
+        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+        UserData ud = obj.ud.ToObject<UserData>();
+
+        Globals.GetClientLogic().LatestUserData = ud;
+    }
+
     public void SendMessageToServer(string type, string content)
     {
         _lastMessageValue++;
@@ -315,6 +326,9 @@ public class NetworkHandler : NetworkManager
                 break;
             case "UPD":
                 Server_UPD(conn, msg);
+                break;
+            case "WHOAMI":
+                Server_WHOAMI(conn, msg);
                 break;
             default:
                 return;
@@ -477,6 +491,28 @@ public class NetworkHandler : NetworkManager
         else
         {
             SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Connection timed out\"}");
+        }
+    }
+
+    private void Server_WHOAMI(NetworkConnection conn, MessagePacket msg)
+    {
+        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+        string token = obj.token;
+
+        long userId = Globals.GetDatabaseConnector().TokenToUserId(token);
+        UserData ud = Globals.GetDatabaseConnector().GetUserData(userId);
+        if (ud != null)
+        {
+            Globals.GetDatabaseConnector().RefreshToken(token);
+
+            dynamic resObj = new ExpandoObject();
+            resObj.ud = ud;
+            string message = JsonConvert.SerializeObject(resObj);
+            SendMessageToClient((NetworkConnectionToClient)conn, "WHOAMI", message);
+        }
+        else
+        {
+            SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Server Error\"}");
         }
     }
 

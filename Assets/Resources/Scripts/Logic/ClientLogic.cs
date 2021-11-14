@@ -14,26 +14,34 @@ public class ClientLogic : MonoBehaviour
     public TextMeshProUGUI PlayerValueText;
     public TextMeshProUGUI PlayerIncomeText;
     public PlayerData LatestPlayerData;
+    public UserData LatestUserData;
 
-    void Start()
+    public void Clean()
+    {
+        LatestUserData = null;
+        LatestPlayerData = null;
+        PlayerValueText.text = "";
+        PlayerIncomeText.text = "";
+    }
+
+    public void Init()
     {
         nextTick = DateTime.Now;
-        if (Globals.GetNetworkManager().IsHost)
-        {
-            enabled = false;
-        }
-        else
-        {
-            Invoke("InitialUpdate", 1);
-        }
+        
+        Invoke("InitialUpdate", 1);
     }
 
     private void InitialUpdate()
     {
         if (Globals.GetMap()?.activeSelf == true && !Globals.GetLoader().IsOn())
         {
+            //WHOAMI
+            string message = ClientAPI.Prepare_WHOAMI(PlayerPrefs.GetString("Token", ""));
+            Globals.GetNetworkManager().SendMessageToServer("WHOAMI", message);
+
+            //UPD
             Globals.GetLocationUpdater().UpdateNow();
-            string message = ClientAPI.Prepare_UPD(Globals.GetMap().GetComponent<MapRenderer>().Bounds, PlayerPrefs.GetString("Token", ""));
+            message = ClientAPI.Prepare_UPD(Globals.GetMap().GetComponent<MapRenderer>().Bounds, PlayerPrefs.GetString("Token", ""));
             Globals.GetNetworkManager().SendMessageToServer("UPD", message);
             nextTick = DateTime.Now.AddSeconds(Globals.IntervalInSeconds_UPD);
         }
@@ -41,6 +49,11 @@ public class ClientLogic : MonoBehaviour
 
     void Update()
     {
+        if (Globals.GetNetworkManager().IsHost)
+        {
+            enabled = false;
+        }
+
         if (DateTime.Now > nextTick)
         {
             if (Globals.GetMap()?.activeSelf==true && !Globals.GetLoader().IsOn())

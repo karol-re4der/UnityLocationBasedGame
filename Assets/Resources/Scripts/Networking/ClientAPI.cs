@@ -43,4 +43,13 @@ public static class ClientAPI
 
         return message;
     }
+
+    public static string Prepare_WHOAMI(string token)
+    {
+        dynamic obj = new ExpandoObject();
+        obj.token = token;
+        string message = JsonConvert.SerializeObject(obj);
+
+        return message;
+    }
 }
