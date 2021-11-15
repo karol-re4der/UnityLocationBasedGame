@@ -858,7 +858,30 @@ public class DatabaseConnector : MonoBehaviour
     }
     public bool ChargePlayer(long userId, int value)
     {
-        return true;
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        long rowsModified = 0;
+        try
+        {
+            dbcon.Open();
+            string query = $"UPDATE PlayerData SET Value=Value-{value} WHERE Id = (SELECT PlayerDataId FROM UserAccounts WHERE Id={userId}) AND (Value-{value})>=0; SELECT changes();";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            rowsModified = (long)dbcmd.ExecuteScalar();
+        }
+        catch (Exception ex)
+        {
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+        }
+        finally
+        {
+            dbcon.Close();
+        }
+
+        return rowsModified > 0;
     }
     public SpotData GetSpot(long spotId)
     {
@@ -873,7 +896,7 @@ public class DatabaseConnector : MonoBehaviour
         {
             dbcon.Open();
 
-            string query = "SELECT sp.Id, sp.Name, sp.Description, sp.Value, sp.IncomePerSecond, sp.Latitude, sp.Longitude, sp.OwnerId, ua.Nickname FROM Spots sp LEFT JOIN UserAccounts ua ON ua.Id=sp.OwnerId";
+            string query = $"SELECT sp.Id, sp.Name, sp.Description, sp.Value, sp.IncomePerSecond, sp.Latitude, sp.Longitude, sp.OwnerId, ua.Nickname FROM Spots sp LEFT JOIN UserAccounts ua ON ua.Id=sp.OwnerId WHERE Sp.Id={spotId}";
             IDbCommand dbcmd = dbcon.CreateCommand();
             dbcmd.CommandText = query;
             reader = dbcmd.ExecuteReader();
