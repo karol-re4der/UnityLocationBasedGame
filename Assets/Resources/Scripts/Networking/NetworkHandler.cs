@@ -265,7 +265,7 @@ public class NetworkHandler : NetworkManager
             Globals.GetPrompt().ShowMessage("Purchase successful!");
             Globals.GetDebugConsole().LogMessage("BUY successful!");
 
-            SpotPin spot = Globals.GetMap().GetComponentsInChildren<SpotPin>().ToList<SpotPin>().Find((x)=>x.Data.Id==spotId);
+            SpotPin spot = Globals.GetMap().GetComponentsInChildren<SpotPin>().ToList<SpotPin>().Find((x) => x.Data.Id == spotId);
             spot.Data.OwnerId = spotId;
             if (Globals.GetClientLogic().LatestUserData != null)
             {
@@ -540,7 +540,7 @@ public class NetworkHandler : NetworkManager
             Globals.GetDatabaseConnector().RefreshToken(token);
 
             long userId = Globals.GetDatabaseConnector().TokenToUserId(token);
-            if (userId>=0)
+            if (userId >= 0)
             {
                 UserData ud = Globals.GetDatabaseConnector().GetUserData(userId);
                 if (ud != null)
@@ -585,19 +585,26 @@ public class NetworkHandler : NetworkManager
                     SpotData sd = Globals.GetDatabaseConnector().GetSpot(spotId);
                     if (sd != null)
                     {
-                        if (Globals.GetDatabaseConnector().ChargePlayer(userId, sd.Value))
+                        if (sd.OwnerId != userId)
                         {
-                            Globals.GetDatabaseConnector().UpdateSpotOwner(userId, spotId);
-                            SendMessageToClient((NetworkConnectionToClient)conn, "BUY", "{\"success\": true, \"msg\": " + spotId+"}");
+                            if (Globals.GetDatabaseConnector().ChargePlayer(userId, sd.Value))
+                            {
+                                Globals.GetDatabaseConnector().UpdateSpotOwner(userId, spotId);
+                                SendMessageToClient((NetworkConnectionToClient)conn, "BUY", "{\"success\": true, \"msg\": " + spotId + "}");
+                            }
+                            else
+                            {
+                                SendMessageToClient((NetworkConnectionToClient)conn, "BUY", "{\"success\": false, \"msg\": \"Cannot afford!\"}");
+                            }
                         }
                         else
                         {
-                            SendMessageToClient((NetworkConnectionToClient)conn, "BUY", "{\"success\": false, \"msg\": \"Cannot afford!\"}");
+                            SendMessageToClient((NetworkConnectionToClient)conn, "BUY", "{\"success\": false, \"msg\": \"Already owned!\"}");
                         }
                     }
                     else
                     {
-                        SendMessageToClient((NetworkConnectionToClient)conn, "BUY", "{\"success\": false, \"spotId\": \"The spot does not exist!\"}");
+                        SendMessageToClient((NetworkConnectionToClient)conn, "BUY", "{\"success\": false, \"msg\": \"The spot does not exist!\"}");
                     }
                 }
                 else

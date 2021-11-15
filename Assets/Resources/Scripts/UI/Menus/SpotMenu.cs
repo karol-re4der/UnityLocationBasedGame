@@ -17,7 +17,7 @@ public class SpotMenu : SubMenu
     void Update()
     {
         if (Globals.GetClientLogic().LatestPlayerData!=null && _currentSpot!=null) {
-            if (Globals.GetClientLogic().LatestPlayerData.Value >= _currentSpot.Value)
+            if (Globals.GetClientLogic().LatestPlayerData.Value >= _currentSpot.Value && Globals.GetClientLogic()?.LatestUserData.Nickname.Equals(_currentSpot.OwnerNickname)==false)
             {
                 PurchaseButton.interactable = true;
             }

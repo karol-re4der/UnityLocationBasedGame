@@ -585,7 +585,6 @@ public class DatabaseConnector : MonoBehaviour
 
         return result;
     }
-
     public PlayerData GetPlayerData(long userId)
     {
         if (dbcon == null)
@@ -632,7 +631,6 @@ public class DatabaseConnector : MonoBehaviour
 
         return result;
     }
-
     public List<NonPlayerData> GetNonPlayers(long userId)
     {
         if (dbcon == null)
@@ -680,7 +678,6 @@ public class DatabaseConnector : MonoBehaviour
 
         return result;
     }
-
     public bool UpdatePlayerData(PlayerData newData)
     {
         if (dbcon == null)
@@ -709,7 +706,6 @@ public class DatabaseConnector : MonoBehaviour
 
         return true;
     }
-
     public bool UpdatePlayerPos(long playerDataId, LatLon coords)
     {
         if (dbcon == null)
@@ -740,7 +736,6 @@ public class DatabaseConnector : MonoBehaviour
 
         return true;
     }
-
     public List<long> GetUserIds()
     {
         if (dbcon == null)
@@ -780,7 +775,6 @@ public class DatabaseConnector : MonoBehaviour
 
         return result;
     }
-
     public long ResetPlayerData(long userId)
     {
         if (dbcon == null)
@@ -826,7 +820,6 @@ public class DatabaseConnector : MonoBehaviour
 
         return playerDataId;
     }
-
     public int CountPlayerIncome(long userId)
     {
         if (dbcon == null)
@@ -863,12 +856,10 @@ public class DatabaseConnector : MonoBehaviour
 
         return income;
     }
-
     public bool ChargePlayer(long userId, int value)
     {
         return true;
     }
-
     public SpotData GetSpot(long spotId)
     {
         if (dbcon == null)
@@ -901,7 +892,7 @@ public class DatabaseConnector : MonoBehaviour
                 ownerNickname = reader[8].ToString();
             }
 
-            SpotData nextSpot = new SpotData
+            result = new SpotData
             {
                 Id = id,
                 Name = name,
@@ -930,7 +921,6 @@ public class DatabaseConnector : MonoBehaviour
 
         return result;
     }
-
     public bool UpdateSpotOwner(long userId, long spotId)
     {
         if (dbcon == null)
@@ -959,5 +949,6 @@ public class DatabaseConnector : MonoBehaviour
 
         return true;
     }
+
     #endregion
 }
