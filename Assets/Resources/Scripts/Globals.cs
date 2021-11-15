@@ -18,6 +18,11 @@ public static class Globals
     public static int NonPlayerVisibilityInSeconds = 20;
     public static char ValueChar = '$';
 
+    public static SpotMenu GetSpotMenu()
+    {
+        return GameObject.Find("Canvas").transform.Find("Game View/UI/Spot Menu/").GetComponent<SpotMenu>();
+    }
+
     public static LocationUpdater GetLocationUpdater()
     {
         return GetMap().GetComponent<LocationUpdater>();

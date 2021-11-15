@@ -17,7 +17,9 @@ public class SpotData
     public string Name;
     public string Description;
     public int Value;
+    public int IncomePerSecond;
     public long OwnerId;
+    public string OwnerNickname;
 
     public double Lat;
     public double Lon;

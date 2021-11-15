@@ -535,7 +535,7 @@ public class DatabaseConnector : MonoBehaviour
         {
             dbcon.Open();
 
-            string query = "SELECT Id, Name, Description, Value, Latitude, Longitude, OwnerId FROM Spots";
+            string query = "SELECT sp.Id, sp.Name, sp.Description, sp.Value, sp.IncomePerSecond, sp.Latitude, sp.Longitude, sp.OwnerId, ua.Nickname FROM Spots sp LEFT JOIN UserAccounts ua ON ua.Id=sp.OwnerId";
             IDbCommand dbcmd = dbcon.CreateCommand();
             dbcmd.CommandText = query;
             reader = dbcmd.ExecuteReader();
@@ -545,10 +545,15 @@ public class DatabaseConnector : MonoBehaviour
                 string name = reader[1].ToString();
                 string desc = reader[2].ToString();
                 int value = Int32.Parse(reader[3].ToString());
-                double lat = double.Parse(reader[4].ToString());
-                double lon = double.Parse(reader[5].ToString());
+                int incomePerSecond = Int32.Parse(reader[4].ToString());
+                double lat = double.Parse(reader[5].ToString());
+                double lon = double.Parse(reader[6].ToString());
                 long ownerId = -1;
-                long.TryParse(reader[6].ToString(), out ownerId);
+                string ownerNickname = "";
+                if (long.TryParse(reader[7].ToString(), out ownerId))
+                {
+                    ownerNickname = reader[8].ToString();
+                }
 
                 SpotData nextSpot = new SpotData
                 {
@@ -556,9 +561,11 @@ public class DatabaseConnector : MonoBehaviour
                     Name = name,
                     Description = desc,
                     Value = value,
+                    IncomePerSecond = incomePerSecond,
                     Lat = lat,
                     Lon = lon,
-                    OwnerId = ownerId
+                    OwnerId = ownerId,
+                    OwnerNickname = ownerNickname
                 };
                 result.Add(nextSpot);
             }
@@ -833,7 +840,7 @@ public class DatabaseConnector : MonoBehaviour
         {
             dbcon.Open();
 
-            string query = $"SELECT IFNULL(SUM(Value), 0)+{Globals.PlayerBaseIncome} FROM Spots WHERE OwnerId={userId}";
+            string query = $"SELECT IFNULL(SUM(IncomePerSecond), 0)+{Globals.PlayerBaseIncome} FROM Spots WHERE OwnerId={userId}";
             IDbCommand dbcmd = dbcon.CreateCommand();
             dbcmd.CommandText = query;
             reader = dbcmd.ExecuteReader();

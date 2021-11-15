@@ -25,13 +25,13 @@ public class ClientLogic : MonoBehaviour
     public void Init()
     {
         nextTick = DateTime.Now;
-        
+
         Invoke("InitialUpdate", 1);
     }
 
     private void InitialUpdate()
     {
-        if (Globals.GetMap()?.activeSelf == true && !Globals.GetLoader().IsOn())
+        if (!Globals.GetNetworkManager().IsHost && Globals.GetMap()?.activeSelf == true && !Globals.GetLoader().IsOn())
         {
             //WHOAMI
             string message = ClientAPI.Prepare_WHOAMI(PlayerPrefs.GetString("Token", ""));
@@ -50,11 +50,12 @@ public class ClientLogic : MonoBehaviour
         if (Globals.GetNetworkManager().IsHost)
         {
             enabled = false;
+            return;
         }
 
         if (DateTime.Now > nextTick)
         {
-            if (Globals.GetMap()?.activeSelf==true && !Globals.GetLoader().IsOn())
+            if (Globals.GetMap()?.activeSelf == true && !Globals.GetLoader().IsOn())
             {
                 string message = ClientAPI.Prepare_UPD(Globals.GetMap().GetComponent<MapRenderer>().Bounds, PlayerPrefs.GetString("Token", ""));
                 Globals.GetNetworkManager().SendMessageToServer("UPD", message);
@@ -67,12 +68,12 @@ public class ClientLogic : MonoBehaviour
 
     void RefreshInterface()
     {
-        if(DateTime.Now> nextInterfaceUpdate)
+        if (DateTime.Now > nextInterfaceUpdate)
         {
             if (LatestPlayerData != null)
             {
                 LatestPlayerData.Update();
-                string text = $"{LatestPlayerData.ValueUpdated}{Globals.ValueChar} {((LatestPlayerData.IncomePerSecond<0)?'-':'+')} {LatestPlayerData.IncomePerSecond} {Globals.ValueChar}/s";
+                string text = $"{LatestPlayerData.ValueUpdated}{Globals.ValueChar} {((LatestPlayerData.IncomePerSecond < 0) ? '-' : '+')} {LatestPlayerData.IncomePerSecond} {Globals.ValueChar}/s";
                 ValueText.text = text;
             }
 
