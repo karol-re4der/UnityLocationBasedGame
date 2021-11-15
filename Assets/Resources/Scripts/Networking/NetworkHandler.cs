@@ -271,6 +271,11 @@ public class NetworkHandler : NetworkManager
             {
                 spot.Data.OwnerNickname = Globals.GetClientLogic().LatestUserData.Nickname;
             }
+            if (Globals.GetClientLogic().LatestPlayerData.Value != null)
+            {
+                Globals.GetClientLogic().LatestPlayerData.IncomePerSecond += spot.Data.IncomePerSecond;
+                Globals.GetClientLogic().LatestPlayerData.ValueUpdated -= spot.Data.Value;
+            }
             if (Globals.GetSpotMenu().IsOn())
             {
                 Globals.GetSpotMenu().Enter(spot.Data);
