@@ -864,5 +864,100 @@ public class DatabaseConnector : MonoBehaviour
         return income;
     }
 
+    public bool ChargePlayer(long userId, int value)
+    {
+        return true;
+    }
+
+    public SpotData GetSpot(long spotId)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        SpotData result = new SpotData();
+        IDataReader reader = null;
+        try
+        {
+            dbcon.Open();
+
+            string query = "SELECT sp.Id, sp.Name, sp.Description, sp.Value, sp.IncomePerSecond, sp.Latitude, sp.Longitude, sp.OwnerId, ua.Nickname FROM Spots sp LEFT JOIN UserAccounts ua ON ua.Id=sp.OwnerId";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            reader = dbcmd.ExecuteReader();
+
+            long id = long.Parse(reader[0].ToString());
+            string name = reader[1].ToString();
+            string desc = reader[2].ToString();
+            int value = Int32.Parse(reader[3].ToString());
+            int incomePerSecond = Int32.Parse(reader[4].ToString());
+            double lat = double.Parse(reader[5].ToString());
+            double lon = double.Parse(reader[6].ToString());
+            long ownerId = -1;
+            string ownerNickname = "";
+            if (long.TryParse(reader[7].ToString(), out ownerId))
+            {
+                ownerNickname = reader[8].ToString();
+            }
+
+            SpotData nextSpot = new SpotData
+            {
+                Id = id,
+                Name = name,
+                Description = desc,
+                Value = value,
+                IncomePerSecond = incomePerSecond,
+                Lat = lat,
+                Lon = lon,
+                OwnerId = ownerId,
+                OwnerNickname = ownerNickname
+            };
+        }
+        catch (Exception ex)
+        {
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+            return null;
+        }
+        finally
+        {
+            if (reader != null && reader.IsClosed)
+            {
+                reader.Close();
+            }
+            dbcon.Close();
+        }
+
+        return result;
+    }
+
+    public bool UpdateSpotOwner(long userId, long spotId)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        try
+        {
+            dbcon.Open();
+
+            string query = $"UPDATE Spots SET OwnerId={userId} WHERE Id={spotId}";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            dbcmd.ExecuteNonQuery();
+        }
+        catch (Exception ex)
+        {
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+            return false;
+        }
+        finally
+        {
+            dbcon.Close();
+        }
+
+        return true;
+    }
     #endregion
 }

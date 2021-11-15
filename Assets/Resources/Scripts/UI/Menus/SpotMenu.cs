@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 public class SpotMenu : SubMenu
 {
@@ -11,11 +12,20 @@ public class SpotMenu : SubMenu
     public TextMeshProUGUI OwnerField;
     public TextMeshProUGUI ValueField;
     public TextMeshProUGUI ButtonText;
-
+    public Button PurchaseButton;
 
     void Update()
     {
-
+        if (Globals.GetClientLogic().LatestPlayerData!=null && _currentSpot!=null) {
+            if (Globals.GetClientLogic().LatestPlayerData.Value >= _currentSpot.Value)
+            {
+                PurchaseButton.interactable = true;
+            }
+            else
+            {
+                PurchaseButton.interactable = false;
+            }
+        }
     }
 
     public void Enter(SpotData spot)
@@ -36,6 +46,7 @@ public class SpotMenu : SubMenu
 
     public void Button_Purchase()
     {
-
+        string message = ClientAPI.Prepare_BUY(PlayerPrefs.GetString("Token", ""), _currentSpot.Id);
+        Globals.GetNetworkManager().SendMessageToServer("BUY", message);
     }
 }

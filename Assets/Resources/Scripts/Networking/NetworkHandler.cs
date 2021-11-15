@@ -121,6 +121,9 @@ public class NetworkHandler : NetworkManager
             case "WHOAMI":
                 Client_WHOAMI(msg);
                 break;
+            case "BUY":
+                Client_BUY(msg);
+                break;
             default:
                 return;
         }
@@ -250,6 +253,36 @@ public class NetworkHandler : NetworkManager
         //Get disconnected and die
     }
 
+    private void Client_BUY(MessagePacket msg)
+    {
+        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+        bool result = obj.success;
+        long spotId = result ? obj.msg : -1;
+        string message = result ? "" : obj.msg;
+
+        if (result)
+        {
+            Globals.GetPrompt().ShowMessage("Purchase successful!");
+            Globals.GetDebugConsole().LogMessage("BUY successful!");
+
+            SpotPin spot = Globals.GetMap().GetComponentsInChildren<SpotPin>().ToList<SpotPin>().Find((x)=>x.Data.Id==spotId);
+            spot.Data.OwnerId = spotId;
+            if (Globals.GetClientLogic().LatestUserData != null)
+            {
+                spot.Data.OwnerNickname = Globals.GetClientLogic().LatestUserData.Nickname;
+            }
+            if (Globals.GetSpotMenu().IsOn())
+            {
+                Globals.GetSpotMenu().Enter(spot.Data);
+            }
+        }
+        else
+        {
+            Globals.GetPrompt().ShowMessage("Purchase failed! " + message);
+            Globals.GetDebugConsole().LogMessage("BUY failed: " + message);
+        }
+    }
+
     private void Client_WHOAMI(MessagePacket msg)
     {
         dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
@@ -329,6 +362,9 @@ public class NetworkHandler : NetworkManager
                 break;
             case "WHOAMI":
                 Server_WHOAMI(conn, msg);
+                break;
+            case "BUY":
+                Server_BUY(conn, msg);
                 break;
             default:
                 return;
@@ -499,20 +535,84 @@ public class NetworkHandler : NetworkManager
         dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
         string token = obj.token;
 
-        long userId = Globals.GetDatabaseConnector().TokenToUserId(token);
-        UserData ud = Globals.GetDatabaseConnector().GetUserData(userId);
-        if (ud != null)
+        if (Globals.GetDatabaseConnector().TokenInUse(token) == 1)
         {
             Globals.GetDatabaseConnector().RefreshToken(token);
 
-            dynamic resObj = new ExpandoObject();
-            resObj.ud = ud;
-            string message = JsonConvert.SerializeObject(resObj);
-            SendMessageToClient((NetworkConnectionToClient)conn, "WHOAMI", message);
+            long userId = Globals.GetDatabaseConnector().TokenToUserId(token);
+            if (userId>=0)
+            {
+                UserData ud = Globals.GetDatabaseConnector().GetUserData(userId);
+                if (ud != null)
+                {
+                    dynamic resObj = new ExpandoObject();
+                    resObj.ud = ud;
+                    string message = JsonConvert.SerializeObject(resObj);
+                    SendMessageToClient((NetworkConnectionToClient)conn, "WHOAMI", message);
+                }
+                else
+                {
+                    SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Server Error\"}");
+                }
+            }
+            else
+            {
+                SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Server Error\"}");
+            }
         }
         else
         {
-            SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Server Error\"}");
+            SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Connection timed out\"}");
+        }
+    }
+
+    private void Server_BUY(NetworkConnection conn, MessagePacket msg)
+    {
+        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+        string token = obj.token;
+        long spotId = obj.spotId;
+
+        if (Globals.GetDatabaseConnector().TokenInUse(token) == 1)
+        {
+            Globals.GetDatabaseConnector().RefreshToken(token);
+
+            long userId = Globals.GetDatabaseConnector().TokenToUserId(token);
+            if (userId >= 0)
+            {
+                PlayerData pd = Globals.GetDatabaseConnector().GetPlayerData(userId);
+                if (pd != null)
+                {
+                    SpotData sd = Globals.GetDatabaseConnector().GetSpot(spotId);
+                    if (sd != null)
+                    {
+                        if (Globals.GetDatabaseConnector().ChargePlayer(userId, sd.Value))
+                        {
+                            Globals.GetDatabaseConnector().UpdateSpotOwner(userId, spotId);
+                            SendMessageToClient((NetworkConnectionToClient)conn, "BUY", "{\"success\": true, \"msg\": " + spotId+"}");
+                        }
+                        else
+                        {
+                            SendMessageToClient((NetworkConnectionToClient)conn, "BUY", "{\"success\": false, \"msg\": \"Cannot afford!\"}");
+                        }
+                    }
+                    else
+                    {
+                        SendMessageToClient((NetworkConnectionToClient)conn, "BUY", "{\"success\": false, \"spotId\": \"The spot does not exist!\"}");
+                    }
+                }
+                else
+                {
+                    SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Server Error\"}");
+                }
+            }
+            else
+            {
+                SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Server Error\"}");
+            }
+        }
+        else
+        {
+            SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Connection timed out\"}");
         }
     }
 

@@ -3912,6 +3912,7 @@ MonoBehaviour:
   OwnerField: {fileID: 972514215}
   ValueField: {fileID: 149990394}
   ButtonText: {fileID: 1049659831}
+  PurchaseButton: {fileID: 979652437}
 --- !u!1 &566752507
 GameObject:
   m_ObjectHideFlags: 0

@@ -52,4 +52,14 @@ public static class ClientAPI
 
         return message;
     }
+
+    public static string Prepare_BUY(string token, long spotId)
+    {
+        dynamic obj = new ExpandoObject();
+        obj.token = token;
+        obj.spotId = spotId;
+        string message = JsonConvert.SerializeObject(obj);
+
+        return message;
+    }
 }
