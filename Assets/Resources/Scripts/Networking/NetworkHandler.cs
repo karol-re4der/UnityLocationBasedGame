@@ -44,6 +44,11 @@ public class NetworkHandler : NetworkManager
 
     }
 
+    public void TestFunc()
+    {
+        SendMessageToServer("KILL", PlayerPrefs.GetString("Token", ""));
+    }
+
     #region Client
     public override void OnStartClient()
     {
@@ -189,6 +194,12 @@ public class NetworkHandler : NetworkManager
         else
         {
             Globals.GetDebugConsole().LogMessage("CHECK failed: " + message);
+
+            if (Globals.GetMap().activeSelf)
+            {
+                Globals.GetStartupManager().ExitGameView();
+                Globals.GetPrompt().ShowMessage("Disconnected! " + message);
+            }
         }
         Globals.GetLoader().Exit();
     }
@@ -250,7 +261,16 @@ public class NetworkHandler : NetworkManager
 
     private void Client_KILL(MessagePacket msg)
     {
-        //Get disconnected and die
+        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+        string reason = obj.reason;
+
+        Globals.GetPrompt().ShowMessage("Disconnected by server. " + reason);
+
+        NetworkClient.Disconnect();
+        if (Globals.GetMap().activeSelf)
+        {
+            Globals.GetStartupManager().ExitGameView();
+        }
     }
 
     private void Client_BUY(MessagePacket msg)
@@ -370,6 +390,9 @@ public class NetworkHandler : NetworkManager
                 break;
             case "BUY":
                 Server_BUY(conn, msg);
+                break;
+            case "KILL":
+                Server_KILL(conn, msg);
                 break;
             default:
                 return;
@@ -505,18 +528,18 @@ public class NetworkHandler : NetworkManager
             {
                 if (!Globals.GetDatabaseConnector().UpdatePlayerPos(pd.PlayerDataId, bounds.Center))
                 {
-                    SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Server error\"}");
+                    KillClient((NetworkConnectionToClient)conn, "Server error");
                     return;
                 }
             }
             if (spots == null)
             {
-                SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Server error\"}");
+                KillClient((NetworkConnectionToClient)conn, "Server error");
                 return;
             }
             if (nonPlayers == null)
             {
-                SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Server error\"}");
+                KillClient((NetworkConnectionToClient)conn, "Server error");
                 return;
             }
 
@@ -531,7 +554,7 @@ public class NetworkHandler : NetworkManager
         }
         else
         {
-            SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Connection timed out\"}");
+            KillClient((NetworkConnectionToClient)conn, "Connection timed out");
         }
     }
 
@@ -557,17 +580,17 @@ public class NetworkHandler : NetworkManager
                 }
                 else
                 {
-                    SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Server Error\"}");
+                    KillClient((NetworkConnectionToClient)conn, "Server error", token);
                 }
             }
             else
             {
-                SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Server Error\"}");
+                KillClient((NetworkConnectionToClient)conn, "Server error");
             }
         }
         else
         {
-            SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Connection timed out\"}");
+            KillClient((NetworkConnectionToClient)conn, "Connection timed out");
         }
     }
 
@@ -614,18 +637,24 @@ public class NetworkHandler : NetworkManager
                 }
                 else
                 {
-                    SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Server Error\"}");
+                    KillClient((NetworkConnectionToClient)conn, "Server error", token);
+
                 }
             }
             else
             {
-                SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Server Error\"}");
+                KillClient((NetworkConnectionToClient)conn, "Server error", token);
             }
         }
         else
         {
-            SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"Connection timed out\"}");
+            KillClient((NetworkConnectionToClient)conn, "Connection timed out");
         }
+    }
+
+    private void Server_KILL(NetworkConnection conn, MessagePacket msg)
+    {
+        KillClient((NetworkConnectionToClient)conn, "Wrong request", msg.Content);
     }
 
     public void SendMessageToClient(NetworkConnectionToClient conn, string type, string text)
@@ -667,5 +696,17 @@ public class NetworkHandler : NetworkManager
 
         return newToken;
     }
+
+    private void KillClient(NetworkConnectionToClient conn, string reason, string token = "")
+    {
+        SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"" + reason + "\"}");
+        conn.Disconnect();
+
+        if (!String.IsNullOrWhiteSpace(token))
+        {
+            Globals.GetDatabaseConnector().RemoveToken(token);
+        }
+    }
+
     #endregion
 }

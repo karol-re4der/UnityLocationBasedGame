@@ -309,6 +309,36 @@ public class DatabaseConnector : MonoBehaviour
 
     #region Token
 
+    public bool RemoveToken(string token)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        bool result = true;
+        try
+        {
+            dbcon.Open();
+
+            string query = $"UPDATE UserAccounts SET SessionId=NULL WHERE SessionId in (SELECT Id FROM Sessions WHERE Token='{token}');" +
+                           $"DELETE FROM Sessions WHERE Token='{token}';";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            dbcmd.ExecuteNonQuery();
+        }
+        catch (Exception ex)
+        {
+            result = false;
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+        }
+        finally
+        {
+            dbcon.Close();
+        }
+
+        return result;
+    }
     public bool RefreshToken(string token)
     {
         if (dbcon == null)
