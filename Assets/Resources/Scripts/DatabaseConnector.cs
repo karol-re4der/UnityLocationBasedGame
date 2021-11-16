@@ -866,8 +866,9 @@ public class DatabaseConnector : MonoBehaviour
         long rowsModified = 0;
         try
         {
+            string valueString = (value >= 0) ? ("-" + value) : ("+"+value);
             dbcon.Open();
-            string query = $"UPDATE PlayerData SET Value=Value-{value} WHERE Id = (SELECT PlayerDataId FROM UserAccounts WHERE Id={userId}) AND (Value-{value})>=0; SELECT changes();";
+            string query = $"UPDATE PlayerData SET Value=Value{valueString} WHERE Id = (SELECT PlayerDataId FROM UserAccounts WHERE Id={userId}) AND (Value{valueString})>=0; SELECT changes();";
             IDbCommand dbcmd = dbcon.CreateCommand();
             dbcmd.CommandText = query;
             rowsModified = (long)dbcmd.ExecuteScalar();
