@@ -20,6 +20,7 @@ public class ClientLogic : MonoBehaviour
         LatestUserData = null;
         LatestPlayerData = null;
         ValueText.text = "";
+        Globals.GetSpotMenu().CurrentSpot = null;
     }
 
     public void Init()

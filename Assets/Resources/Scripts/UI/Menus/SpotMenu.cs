@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public class SpotMenu : SubMenu
 {
-    private SpotData _currentSpot;
+    public SpotData CurrentSpot;
     public TextMeshProUGUI NameField;
     public TextMeshProUGUI DescriptionField;
     public TextMeshProUGUI OwnerField;
@@ -16,8 +16,8 @@ public class SpotMenu : SubMenu
 
     void Update()
     {
-        if (Globals.GetClientLogic().LatestPlayerData!=null && _currentSpot!=null) {
-            if (Globals.GetClientLogic().LatestPlayerData.Value >= _currentSpot.Value && Globals.GetClientLogic()?.LatestUserData.Nickname.Equals(_currentSpot.OwnerNickname)==false)
+        if (Globals.GetClientLogic().LatestPlayerData!=null && CurrentSpot!=null) {
+            if (Globals.GetClientLogic().LatestPlayerData.Value >= CurrentSpot.Value && Globals.GetClientLogic()?.LatestUserData.Nickname.Equals(CurrentSpot.OwnerNickname)==false)
             {
                 PurchaseButton.interactable = true;
             }
@@ -30,23 +30,23 @@ public class SpotMenu : SubMenu
 
     public void Enter(SpotData spot)
     {
-        _currentSpot = spot;
+        CurrentSpot = spot;
         FillFields();
         base.Enter();
     }
 
     private void FillFields()
     {
-        NameField.text = _currentSpot.Name;
-        DescriptionField.text = _currentSpot.Description;
-        OwnerField.text = _currentSpot.OwnerNickname;
-        ValueField.text = $"{_currentSpot.IncomePerSecond} {Globals.ValueChar}/s";
-        ButtonText.text = _currentSpot.Value + " " + Globals.ValueChar;
+        NameField.text = CurrentSpot.Name;
+        DescriptionField.text = CurrentSpot.Description;
+        OwnerField.text = CurrentSpot.OwnerNickname;
+        ValueField.text = $"{CurrentSpot.IncomePerSecond} {Globals.ValueChar}/s";
+        ButtonText.text = CurrentSpot.Value + " " + Globals.ValueChar;
     }
 
     public void Button_Purchase()
     {
-        string message = ClientAPI.Prepare_BUY(PlayerPrefs.GetString("Token", ""), _currentSpot.Id);
+        string message = ClientAPI.Prepare_BUY(PlayerPrefs.GetString("Token", ""), CurrentSpot.Id);
         Globals.GetNetworkManager().SendMessageToServer("BUY", message);
     }
 }

@@ -47,7 +47,11 @@ public class StartupManager : MonoBehaviour
         }
 
         //Close game view elements
-        GameObject.Find("Canvas").transform.Find("Startup View").gameObject.SetActive(false);
+        GameObject.Find("Canvas").transform.Find("Game View").gameObject.SetActive(false);
+        GameObject.Find("Canvas").transform.Find("Game View/UI/Profile Menu/").GetComponent<ProfileMenu>().Exit();
+        GameObject.Find("Canvas").transform.Find("Game View/UI/Settings Menu/").GetComponent<SettingsMenu>().Exit(); 
+        GameObject.Find("Canvas").transform.Find("Game View/UI/Spot Menu/").GetComponent<SpotMenu>().Exit();
+
         Globals.GetMap().SetActive(false);
         Globals.GetInput().enabled = false;
 
