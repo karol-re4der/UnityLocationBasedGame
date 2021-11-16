@@ -68,50 +68,6 @@ public class DatabaseConnector : MonoBehaviour
 
         return result;
     }
-    public int GetNextMessageId()
-    {
-        if (dbcon == null)
-        {
-            ConnectToDatabase();
-        }
-
-        int value = -1;
-        IDataReader reader = null;
-        try
-        {
-            dbcon.Open();
-
-            //Get ID
-            string query = "SELECT Id, Value, Step FROM Counters WHERE Name=\"MessageId\"";
-            IDbCommand dbcmd = dbcon.CreateCommand();
-            dbcmd.CommandText = query;
-            reader = dbcmd.ExecuteReader();
-            reader.Read();
-            int id = Int32.Parse(reader[0].ToString());
-            value = Int32.Parse(reader[1].ToString());
-            int step = Int32.Parse(reader[2].ToString());
-            reader.Close();
-
-            //Increment
-            query = "UPDATE Counters SET Value=Value+" + step + " WHERE Id=" + id;
-            dbcmd.CommandText = query;
-            dbcmd.ExecuteNonQuery();
-        }
-        catch (Exception ex)
-        {
-            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
-        }
-        finally
-        {
-            if (reader != null && reader.IsClosed)
-            {
-                reader.Close();
-            }
-            dbcon.Close();
-        }
-
-        return value;
-    }
 
     #endregion
 

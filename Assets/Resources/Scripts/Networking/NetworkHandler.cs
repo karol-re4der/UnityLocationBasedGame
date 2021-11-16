@@ -14,12 +14,10 @@ public class NetworkHandler : NetworkManager
 {
     public struct MessagePacket : NetworkMessage
     {
-        public int MessageId;
         public string Type;
         public string Content;
     }
     private bool _beenConnected = false;
-    private int _lastMessageValue = 0;
     public bool IsHost = false;
 
     void Start()
@@ -102,7 +100,7 @@ public class NetworkHandler : NetworkManager
     public void HandleMessageFromServer(MessagePacket msg)
     {
         //Diagnostics
-        string debugText = "Message " + msg.MessageId + " from server received. Content: " + msg.Content;
+        string debugText = msg.Type+" from server received. Content: " + msg.Content;
         Globals.GetDebugConsole().LogMessage(debugText);
 
         //Handling
@@ -130,11 +128,13 @@ public class NetworkHandler : NetworkManager
                 Client_BUY(msg);
                 break;
             default:
+                debugText = msg.Type+" is an unknown message type. Cannot handle.";
+                Globals.GetDebugConsole().LogMessage(debugText);
                 return;
         }
 
         //Diagnostics
-        debugText = msg.Type + " message " + msg.MessageId + " from server handled.";
+        debugText = msg.Type + " message from server handled.";
         Globals.GetDebugConsole().LogMessage(debugText);
     }
 
@@ -318,10 +318,8 @@ public class NetworkHandler : NetworkManager
 
     public void SendMessageToServer(string type, string content)
     {
-        _lastMessageValue++;
         MessagePacket msg = new MessagePacket
         {
-            MessageId = _lastMessageValue,
             Type = type,
             Content = content
         };
@@ -366,7 +364,7 @@ public class NetworkHandler : NetworkManager
     public void HandleMessageFromClient(NetworkConnection conn, MessagePacket msg)
     {
         //Diagnostics
-        string debugText = "Message " + msg.MessageId + " from " + conn.address + " received. Content: " + msg.Content;
+        string debugText = msg.Type + " message from " + conn.address + " received. Content: " + msg.Content;
         Globals.GetDebugConsole().LogMessage(debugText);
         Globals.GetDatabaseConnector().LogInDatabase("MSG", debugText);
 
@@ -395,11 +393,14 @@ public class NetworkHandler : NetworkManager
                 Server_KILL(conn, msg);
                 break;
             default:
+                debugText = msg.Type + " from " + conn.address + " is of an unknown type. Cannot handle.";
+                Globals.GetDebugConsole().LogMessage(debugText);
+                Globals.GetDatabaseConnector().LogInDatabase("MSG", debugText);
                 return;
         }
 
         //Diagnostics
-        debugText = msg.Type + " message " + msg.MessageId + " from " + conn.address + " handled.";
+        debugText = msg.Type + " message from " + conn.address + " handled.";
         Globals.GetDebugConsole().LogMessage(debugText);
         Globals.GetDatabaseConnector().LogInDatabase("MSG", debugText);
     }
@@ -659,17 +660,14 @@ public class NetworkHandler : NetworkManager
 
     public void SendMessageToClient(NetworkConnectionToClient conn, string type, string text)
     {
-        Globals.GetDatabaseConnector().GetNextMessageId();
-
         MessagePacket msg = new MessagePacket
         {
-            MessageId = Globals.GetDatabaseConnector().GetNextMessageId(),
             Type = type,
             Content = text
         };
 
         conn.Send(msg);
-        Globals.GetDatabaseConnector().LogInDatabase("MSG", $"Message of type {type} sent to {conn.address}, content: {text}");
+        Globals.GetDatabaseConnector().LogInDatabase("MSG", $"{type} message sent to {conn.address}, content: {text}");
     }
 
     public void SetupServerCallbacks()
