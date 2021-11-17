@@ -139,50 +139,53 @@ public class ClientLogic : MonoBehaviour
     }
     public void Handle_UPD(List<SpotData> spots, List<NonPlayerData> nonPlayers, PlayerData pd)
     {
-        LatestPlayerData = pd;
-        LatestPlayerData.Init();
-
-        //Delete out of range spots
-        List<SpotPin> existingSpots = Globals.GetMap().GetComponentsInChildren<SpotPin>().ToList<SpotPin>();
-        foreach (SpotPin spot in existingSpots)
+        if (Globals.GetMap().activeSelf)
         {
-            if (!spots.Exists((x) => x.Id == spot.Data.Id))
-            {
-                GameObject.Destroy(spot.gameObject);
-            }
-        }
+            LatestPlayerData = pd;
+            LatestPlayerData.Init();
 
-        //Instantiate new in range spots
-        foreach (SpotData spot in spots)
-        {
-            if (!existingSpots.Exists((x) => x.Data.Id == spot.Id))
+            //Delete out of range spots
+            List<SpotPin> existingSpots = Globals.GetMap().GetComponentsInChildren<SpotPin>().ToList<SpotPin>();
+            foreach (SpotPin spot in existingSpots)
             {
-                GameObject newPin = (GameObject)GameObject.Instantiate(Resources.Load("Prefabs/Spot Pin"), Globals.GetMap().transform);
-                newPin.GetComponent<SpotPin>().Init(spot);
+                if (!spots.Exists((x) => x.Id == spot.Data.Id))
+                {
+                    GameObject.Destroy(spot.gameObject);
+                }
             }
-        }
 
-        //Delete outdated/outranged players 
-        List<NonPlayerPin> existingNonPlayers = Globals.GetMap().GetComponentsInChildren<NonPlayerPin>().ToList<NonPlayerPin>();
-        foreach (NonPlayerPin np in existingNonPlayers)
-        {
-            if (!nonPlayers.Exists((x) => x.UserId == np.Data.UserId))
+            //Instantiate new in range spots
+            foreach (SpotData spot in spots)
             {
-                GameObject.Destroy(np.gameObject);
+                if (!existingSpots.Exists((x) => x.Data.Id == spot.Id))
+                {
+                    GameObject newPin = (GameObject)GameObject.Instantiate(Resources.Load("Prefabs/Spot Pin"), Globals.GetMap().transform);
+                    newPin.GetComponent<SpotPin>().Init(spot);
+                }
             }
-        }
 
-        //Instantiate new players in range OR update the position
-        foreach (NonPlayerData nonPlayer in nonPlayers)
-        {
-            if (!existingNonPlayers.Exists((x) => x.Data.UserId == nonPlayer.UserId))
+            //Delete outdated/outranged players 
+            List<NonPlayerPin> existingNonPlayers = Globals.GetMap().GetComponentsInChildren<NonPlayerPin>().ToList<NonPlayerPin>();
+            foreach (NonPlayerPin np in existingNonPlayers)
             {
-                GameObject newNonPlayer = (GameObject)GameObject.Instantiate(Resources.Load("Prefabs/Player Pin"), Globals.GetMap().transform);
-                newNonPlayer.GetComponent<NonPlayerPin>().Init(nonPlayer);
+                if (!nonPlayers.Exists((x) => x.UserId == np.Data.UserId))
+                {
+                    GameObject.Destroy(np.gameObject);
+                }
             }
-            else if (existingNonPlayers.Exists((x) => x.Data.UserId == nonPlayer.UserId))
+
+            //Instantiate new players in range OR update the position
+            foreach (NonPlayerData nonPlayer in nonPlayers)
             {
-                existingNonPlayers.Find((x) => x.Data.UserId == nonPlayer.UserId).Init(nonPlayer);
+                if (!existingNonPlayers.Exists((x) => x.Data.UserId == nonPlayer.UserId))
+                {
+                    GameObject newNonPlayer = (GameObject)GameObject.Instantiate(Resources.Load("Prefabs/Player Pin"), Globals.GetMap().transform);
+                    newNonPlayer.GetComponent<NonPlayerPin>().Init(nonPlayer);
+                }
+                else if (existingNonPlayers.Exists((x) => x.Data.UserId == nonPlayer.UserId))
+                {
+                    existingNonPlayers.Find((x) => x.Data.UserId == nonPlayer.UserId).Init(nonPlayer);
+                }
             }
         }
     }
@@ -198,31 +201,34 @@ public class ClientLogic : MonoBehaviour
     }
     public void Handle_BUY(bool result, long spotId, string message)
     {
-        if (result)
+        if (Globals.GetMap().activeSelf)
         {
-            Globals.GetPrompt().ShowMessage("Purchase successful!");
-            Globals.GetDebugConsole().LogMessage("BUY successful!");
+            if (result)
+            {
+                Globals.GetPrompt().ShowMessage("Purchase successful!");
+                Globals.GetDebugConsole().LogMessage("BUY successful!");
 
-            SpotPin spot = Globals.GetMap().GetComponentsInChildren<SpotPin>().ToList<SpotPin>().Find((x) => x.Data.Id == spotId);
-            spot.Data.OwnerId = spotId;
-            if (Globals.GetClientLogic().LatestUserData != null)
-            {
-                spot.Data.OwnerNickname = Globals.GetClientLogic().LatestUserData.Nickname;
+                SpotPin spot = Globals.GetMap().GetComponentsInChildren<SpotPin>().ToList<SpotPin>().Find((x) => x.Data.Id == spotId);
+                spot.Data.OwnerId = spotId;
+                if (Globals.GetClientLogic().LatestUserData != null)
+                {
+                    spot.Data.OwnerNickname = Globals.GetClientLogic().LatestUserData.Nickname;
+                }
+                if (Globals.GetClientLogic().LatestPlayerData.Value != null)
+                {
+                    Globals.GetClientLogic().LatestPlayerData.IncomePerSecond += spot.Data.IncomePerSecond;
+                    Globals.GetClientLogic().LatestPlayerData.ValueUpdated -= spot.Data.Value;
+                }
+                if (Globals.GetSpotMenu().IsOn())
+                {
+                    Globals.GetSpotMenu().Enter(spot.Data);
+                }
             }
-            if (Globals.GetClientLogic().LatestPlayerData.Value != null)
+            else
             {
-                Globals.GetClientLogic().LatestPlayerData.IncomePerSecond += spot.Data.IncomePerSecond;
-                Globals.GetClientLogic().LatestPlayerData.ValueUpdated -= spot.Data.Value;
+                Globals.GetPrompt().ShowMessage("Purchase failed! " + message);
+                Globals.GetDebugConsole().LogMessage("BUY failed: " + message);
             }
-            if (Globals.GetSpotMenu().IsOn())
-            {
-                Globals.GetSpotMenu().Enter(spot.Data);
-            }
-        }
-        else
-        {
-            Globals.GetPrompt().ShowMessage("Purchase failed! " + message);
-            Globals.GetDebugConsole().LogMessage("BUY failed: " + message);
         }
     }
     public void Handle_WHOAMI(UserData ud)
