@@ -28,6 +28,7 @@ public class StartupManager : MonoBehaviour
         Globals.GetInput().enabled = true;
 
         //Start logic
+        Globals.GetMap().GetComponent<LocationProvider>().StartProvider();
         Globals.GetClientLogic().Init();
     }
 

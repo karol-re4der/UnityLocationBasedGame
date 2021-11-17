@@ -1,12 +1,13 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Mirror;
 
 public class LocationProvider : MonoBehaviour
 {
     public Vector2 mockupLocation;
 
-    void Start()
+    public void StartProvider()
     {
         if (Application.isEditor)
         {
@@ -14,20 +15,8 @@ public class LocationProvider : MonoBehaviour
         }
         else
         {
-            if (!Input.location.isEnabledByUser)
-            {
-                Debug.Log("Location disabled by user!");
-            }
-            else
-            {
-                Input.location.Start();
-            }
+            Input.location.Start();
         }
-    }
-
-    void Update()
-    {
-        
     }
 
     public Vector2 GetLocation()
@@ -39,17 +28,15 @@ public class LocationProvider : MonoBehaviour
         }
         else
         {
-            if (Input.location.isEnabledByUser && Input.location.status != LocationServiceStatus.Initializing)
+            if (Input.location.status == LocationServiceStatus.Failed || Input.location.status == LocationServiceStatus.Stopped || !Input.location.isEnabledByUser)
             {
-                if (Input.location.status == LocationServiceStatus.Failed)
-                {
-                    Debug.Log("Location Service Failed!");
-                }
-                else
-                {
-                    result = new Vector2(Input.location.lastData.latitude, Input.location.lastData.longitude);
-                    //Debug.Log("Location taken: " + result.x + ":" + result.y);
-                }
+                Globals.GetStartupManager().ExitGameView();
+                Globals.GetPrompt().ShowMessage("Location disabled. Disconnected.");
+                Globals.GetDebugConsole().LogMessage("Location disabled");
+            }
+            else if (Input.location.status != LocationServiceStatus.Initializing)
+            {
+                result = new Vector2(Input.location.lastData.latitude, Input.location.lastData.longitude);
             }
         }
         
