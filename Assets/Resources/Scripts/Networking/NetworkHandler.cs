@@ -42,11 +42,6 @@ public class NetworkHandler : NetworkManager
 
     }
 
-    public void TestFunc()
-    {
-        SendMessageToServer("KILL", PlayerPrefs.GetString("Token", ""));
-    }
-
     #region Client
     public override void OnStartClient()
     {
