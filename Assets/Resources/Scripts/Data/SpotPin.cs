@@ -16,7 +16,7 @@ public class SpotPin : MapPin
         TargetMenu = Globals.GetSpotMenu();
     }
 
-    void OnMouseDown()
+    void OnMouseUp()
     {
         if (!EventSystem.current.IsPointerOverGameObject())
         {
