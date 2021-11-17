@@ -58,7 +58,8 @@ public class StartupManager : MonoBehaviour
         //Open startup view elements
         GameObject.Find("Canvas").transform.Find("Startup View").gameObject.SetActive(true);
 
-        //Stop logic
+        //Clean
         Globals.GetClientLogic().Clean();
+        Globals.GetMap().GetComponent<LocationUpdater>().SendInitialUPD = true;
     }
 }

@@ -30,24 +30,6 @@ public class ClientLogic : MonoBehaviour
     public void Init()
     {
         nextTick = DateTime.Now;
-
-        Invoke("InitialUpdate", 1);
-    }
-
-    private void InitialUpdate()
-    {
-        if (!Globals.GetNetworkManager().IsHost && Globals.GetMap()?.activeSelf == true && !Globals.GetLoader().IsOn())
-        {
-            //WHOAMI
-            string message = ClientAPI.Prepare_WHOAMI(PlayerPrefs.GetString("Token", ""));
-            Globals.GetNetworkManager().SendMessageToServer("WHOAMI", message);
-
-            //UPD
-            Globals.GetLocationUpdater().UpdateNow();
-            message = ClientAPI.Prepare_UPD(Globals.GetMap().GetComponent<MapRenderer>().Bounds, PlayerPrefs.GetString("Token", ""));
-            Globals.GetNetworkManager().SendMessageToServer("UPD", message);
-            nextTick = DateTime.Now.AddSeconds(Globals.IntervalInSeconds_UPD);
-        }
     }
 
     void Update()

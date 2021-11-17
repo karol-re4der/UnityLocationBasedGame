@@ -6,7 +6,6 @@ public class LocationProvider : MonoBehaviour
 {
     public Vector2 mockupLocation;
 
-    // Start is called before the first frame update
     void Start()
     {
         if (Application.isEditor)
@@ -26,7 +25,6 @@ public class LocationProvider : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
     void Update()
     {
         
@@ -37,7 +35,6 @@ public class LocationProvider : MonoBehaviour
         Vector2 result = new Vector2(0, 0);
         if (Application.isEditor)
         {
-            //Debug.Log("Mockup location taken: " + mockupLocation.x + ":" + mockupLocation.y);
             return mockupLocation;
         }
         else
