@@ -144,19 +144,7 @@ public class NetworkHandler : NetworkManager
         string message = obj.msg;
         bool result = obj.success;
 
-        if (result)
-        {
-            PlayerPrefs.SetString("Token", message);
-            Globals.GetDebugConsole().LogMessage("REGISTER successful. New session token: " + message);
-            GameObject.Find("Canvas").transform.Find("Startup View/Menus/Register Menu").GetComponent<RegisterMenu>().Exit();
-            GameObject.Find("Canvas").transform.Find("Startup View/Menus/Startup Menu").GetComponent<StartupMenu>().Enter();
-            Globals.GetStartupManager().EnterGameView();
-        }
-        else
-        {
-            Globals.GetPrompt().ShowMessage(message);
-            Globals.GetDebugConsole().LogMessage("REGISTER failed: " + message);
-        }
+        Globals.GetClientLogic().Handle_REGISTER(result, message);
     }
 
     private void Client_AUTH(MessagePacket msg)
@@ -165,19 +153,7 @@ public class NetworkHandler : NetworkManager
         string message = obj.msg;
         bool result = obj.success;
 
-        if (result)
-        {
-            PlayerPrefs.SetString("Token", message);
-            Globals.GetDebugConsole().LogMessage("AUTH successful!");
-            GameObject.Find("Canvas").transform.Find("Startup View/Menus/Login Menu").GetComponent<LoginMenu>().Exit();
-            GameObject.Find("Canvas").transform.Find("Startup View/Menus/Startup Menu").GetComponent<StartupMenu>().Enter();
-            Globals.GetStartupManager().EnterGameView();
-        }
-        else
-        {
-            Globals.GetPrompt().ShowMessage(message);
-            Globals.GetDebugConsole().LogMessage("AUTH failed: " + message);
-        }
+        Globals.GetClientLogic().Handle_AUTH(result, message);
     }
 
     private void Client_CHECK(MessagePacket msg)
@@ -186,22 +162,7 @@ public class NetworkHandler : NetworkManager
         string message = obj.success ? "" : obj.msg;
         bool result = obj.success;
 
-        if (result)
-        {
-            Globals.GetDebugConsole().LogMessage("CHECK successful!");
-            Globals.GetStartupManager().EnterGameView();
-        }
-        else
-        {
-            Globals.GetDebugConsole().LogMessage("CHECK failed: " + message);
-
-            if (Globals.GetMap().activeSelf)
-            {
-                Globals.GetStartupManager().ExitGameView();
-                Globals.GetPrompt().ShowMessage("Disconnected! " + message);
-            }
-        }
-        Globals.GetLoader().Exit();
+        Globals.GetClientLogic().Handle_CHECK(result, message);
     }
 
     private void Client_UPD(MessagePacket msg)
@@ -209,54 +170,9 @@ public class NetworkHandler : NetworkManager
         dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
         List<SpotData> spots = obj.spots.ToObject<List<SpotData>>();
         List<NonPlayerData> nonPlayers = obj.nonPlayers.ToObject<List<NonPlayerData>>();
-        Globals.GetClientLogic().LatestPlayerData = obj.pd.ToObject<PlayerData>();
-        Globals.GetClientLogic().LatestPlayerData.Init();
+        PlayerData pd = obj.pd.ToObject<PlayerData>();
 
-        List<SpotPin> existingSpots = Globals.GetMap().GetComponentsInChildren<SpotPin>().ToList<SpotPin>();
-        List<NonPlayerPin> existingNonPlayers = Globals.GetMap().GetComponentsInChildren<NonPlayerPin>().ToList<NonPlayerPin>();
-
-
-        //Delete out of range spots
-        foreach (SpotPin spot in existingSpots)
-        {
-            if (!spots.Exists((x) => x.Id == spot.Data.Id))
-            {
-                GameObject.Destroy(spot.gameObject);
-            }
-        }
-
-        //Instantiate new in range spots
-        foreach (SpotData spot in spots)
-        {
-            if (!existingSpots.Exists((x) => x.Data.Id == spot.Id))
-            {
-                GameObject newPin = (GameObject)GameObject.Instantiate(Resources.Load("Prefabs/Spot Pin"), Globals.GetMap().transform);
-                newPin.GetComponent<SpotPin>().Init(spot);
-            }
-        }
-
-        //Delete outdated/outranged players 
-        foreach (NonPlayerPin np in existingNonPlayers)
-        {
-            if (!nonPlayers.Exists((x) => x.UserId == np.Data.UserId))
-            {
-                GameObject.Destroy(np.gameObject);
-            }
-        }
-
-        //Instantiate new players in range OR update the position
-        foreach (NonPlayerData nonPlayer in nonPlayers)
-        {
-            if (!existingNonPlayers.Exists((x) => x.Data.UserId == nonPlayer.UserId))
-            {
-                GameObject newNonPlayer = (GameObject)GameObject.Instantiate(Resources.Load("Prefabs/Player Pin"), Globals.GetMap().transform);
-                newNonPlayer.GetComponent<NonPlayerPin>().Init(nonPlayer);
-            }
-            else if (existingNonPlayers.Exists((x) => x.Data.UserId == nonPlayer.UserId))
-            {
-                existingNonPlayers.Find((x) => x.Data.UserId == nonPlayer.UserId).Init(nonPlayer);
-            }
-        }
+        Globals.GetClientLogic().Handle_UPD(spots, nonPlayers, pd);
     }
 
     private void Client_KILL(MessagePacket msg)
@@ -264,13 +180,7 @@ public class NetworkHandler : NetworkManager
         dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
         string reason = obj.reason;
 
-        Globals.GetPrompt().ShowMessage("Disconnected by server. " + reason);
-
-        NetworkClient.Disconnect();
-        if (Globals.GetMap().activeSelf)
-        {
-            Globals.GetStartupManager().ExitGameView();
-        }
+        Globals.GetClientLogic().Handle_KILL(reason);
     }
 
     private void Client_BUY(MessagePacket msg)
@@ -280,32 +190,7 @@ public class NetworkHandler : NetworkManager
         long spotId = result ? obj.msg : -1;
         string message = result ? "" : obj.msg;
 
-        if (result)
-        {
-            Globals.GetPrompt().ShowMessage("Purchase successful!");
-            Globals.GetDebugConsole().LogMessage("BUY successful!");
-
-            SpotPin spot = Globals.GetMap().GetComponentsInChildren<SpotPin>().ToList<SpotPin>().Find((x) => x.Data.Id == spotId);
-            spot.Data.OwnerId = spotId;
-            if (Globals.GetClientLogic().LatestUserData != null)
-            {
-                spot.Data.OwnerNickname = Globals.GetClientLogic().LatestUserData.Nickname;
-            }
-            if (Globals.GetClientLogic().LatestPlayerData.Value != null)
-            {
-                Globals.GetClientLogic().LatestPlayerData.IncomePerSecond += spot.Data.IncomePerSecond;
-                Globals.GetClientLogic().LatestPlayerData.ValueUpdated -= spot.Data.Value;
-            }
-            if (Globals.GetSpotMenu().IsOn())
-            {
-                Globals.GetSpotMenu().Enter(spot.Data);
-            }
-        }
-        else
-        {
-            Globals.GetPrompt().ShowMessage("Purchase failed! " + message);
-            Globals.GetDebugConsole().LogMessage("BUY failed: " + message);
-        }
+        Globals.GetClientLogic().Handle_BUY(result, spotId, message);
     }
 
     private void Client_WHOAMI(MessagePacket msg)
@@ -313,7 +198,7 @@ public class NetworkHandler : NetworkManager
         dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
         UserData ud = obj.ud.ToObject<UserData>();
 
-        Globals.GetClientLogic().LatestUserData = ud;
+        Globals.GetClientLogic().Handle_WHOAMI(ud);
     }
 
     public void SendMessageToServer(string type, string content)
@@ -409,41 +294,7 @@ public class NetworkHandler : NetworkManager
     {
         UserData ud = JsonUtility.FromJson<UserData>(msg.Content);
 
-        if (ud.IsComplete())
-        {
-            if (ud.Password.Length > 6 && !String.IsNullOrWhiteSpace(ud.Password))
-            {
-                string newToken = GenerateToken();
-                if (!String.IsNullOrWhiteSpace(newToken))
-                {
-                    if (Globals.GetDatabaseConnector().UserExists(ud) == 0)
-                    {
-                        long userId = Globals.GetDatabaseConnector().InsertNewUser(ud);
-                        long sessionId = Globals.GetDatabaseConnector().AddNewToken(newToken);
-                        Globals.GetDatabaseConnector().AssignToken(sessionId, userId);
-                        Globals.GetDatabaseConnector().ResetPlayerData(userId);
-
-                        SendMessageToClient((NetworkConnectionToClient)conn, "REGISTER", "{\"success\": true, \"msg\": \"" + newToken + "\"}");
-                    }
-                    else
-                    {
-                        SendMessageToClient((NetworkConnectionToClient)conn, "REGISTER", "{\"success\": false, \"msg\": \"Email or nickname already in use.\"}");
-                    }
-                }
-                else
-                {
-                    SendMessageToClient((NetworkConnectionToClient)conn, "REGISTER", "{\"success\": false, \"msg\": \"Server-error: cannot generate new token.\"}");
-                }
-            }
-            else
-            {
-                SendMessageToClient((NetworkConnectionToClient)conn, "REGISTER", "{\"success\": false, \"msg\": \"Password invalid.\"}");
-            }
-        }
-        else
-        {
-            SendMessageToClient((NetworkConnectionToClient)conn, "REGISTER", "{\"success\": false, \"msg\": \"Credentials incomplete.\"}");
-        }
+        Globals.GetServerLogic().Handle_REGISTER((NetworkConnectionToClient)conn, ud);
     }
 
     private void Server_AUTH(NetworkConnection conn, MessagePacket msg)
@@ -452,40 +303,7 @@ public class NetworkHandler : NetworkManager
         string login = obj.login;
         string pass = obj.pass;
 
-        long userId = Globals.GetDatabaseConnector().GetUserId(login);
-        if (userId >= 0)
-        {
-            if (Globals.GetDatabaseConnector().CheckUserPassword(userId, pass))
-            {
-                string sessionToken = Globals.GetDatabaseConnector().FindExistingToken(userId);
-                if (String.IsNullOrWhiteSpace(sessionToken) || Globals.GetDatabaseConnector().TokenInUse(sessionToken) != 1)
-                {
-                    sessionToken = GenerateToken();
-                    if (String.IsNullOrWhiteSpace(sessionToken))
-                    {
-                        SendMessageToClient((NetworkConnectionToClient)conn, "AUTH", "{\"success\": false, \"msg\": \"Server error.\"}");
-                        return;
-                    }
-
-                    long sessionId = Globals.GetDatabaseConnector().AddNewToken(sessionToken);
-                    Globals.GetDatabaseConnector().AssignToken(sessionId, userId);
-                }
-                else
-                {
-                    Globals.GetDatabaseConnector().RefreshToken(sessionToken);
-                }
-
-                SendMessageToClient((NetworkConnectionToClient)conn, "AUTH", "{\"success\": true, \"msg\": \"" + sessionToken + "\"}");
-            }
-            else
-            {
-                SendMessageToClient((NetworkConnectionToClient)conn, "AUTH", "{\"success\": false, \"msg\": \"Wrong password.\"}");
-            }
-        }
-        else
-        {
-            SendMessageToClient((NetworkConnectionToClient)conn, "AUTH", "{\"success\": false, \"msg\": \"No such user.\"}");
-        }
+        Globals.GetServerLogic().Handle_AUTH((NetworkConnectionToClient)conn, login, pass);
     }
 
     private void Server_CHECK(NetworkConnection conn, MessagePacket msg)
@@ -493,16 +311,7 @@ public class NetworkHandler : NetworkManager
         dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
         string token = obj.token;
 
-        bool result = Globals.GetDatabaseConnector().TokenInUse(token) == 1;
-        if (result)
-        {
-            Globals.GetDatabaseConnector().RefreshToken(token);
-            SendMessageToClient((NetworkConnectionToClient)conn, "CHECK", "{\"success\": true}");
-        }
-        else
-        {
-            SendMessageToClient((NetworkConnectionToClient)conn, "CHECK", "{\"success\": false, \"msg\": \"Token not in use or session timed out\"}");
-        }
+        Globals.GetServerLogic().Handle_CHECK((NetworkConnectionToClient)conn, token);
     }
 
     private void Server_UPD(NetworkConnection conn, MessagePacket msg)
@@ -516,47 +325,7 @@ public class NetworkHandler : NetworkManager
         growBox.Grow(topRight);
         GeoBoundingBox bounds = growBox.ToGeoBoundingBox();
 
-        if (Globals.GetDatabaseConnector().TokenInUse(token) == 1)
-        {
-            Globals.GetDatabaseConnector().RefreshToken(token);
-            long userId = Globals.GetDatabaseConnector().TokenToUserId(token);
-
-            List<SpotData> spots = Globals.GetDatabaseConnector().GetSpots();
-            List<NonPlayerData> nonPlayers = Globals.GetDatabaseConnector().GetNonPlayers(userId);
-            PlayerData pd = Globals.GetDatabaseConnector().GetPlayerData(userId);
-
-            if (bounds.Center.LatitudeInDegrees != 0 && bounds.Center.LongitudeInDegrees != 0)
-            {
-                if (!Globals.GetDatabaseConnector().UpdatePlayerPos(pd.PlayerDataId, bounds.Center))
-                {
-                    KillClient((NetworkConnectionToClient)conn, "Server error");
-                    return;
-                }
-            }
-            if (spots == null)
-            {
-                KillClient((NetworkConnectionToClient)conn, "Server error");
-                return;
-            }
-            if (nonPlayers == null)
-            {
-                KillClient((NetworkConnectionToClient)conn, "Server error");
-                return;
-            }
-
-            dynamic resObj = new ExpandoObject();
-
-            resObj.spots = spots.Where((x) => bounds.Intersects(x.Coords)).ToArray();
-            resObj.nonPlayers = nonPlayers.Where((x) => bounds.Intersects(x.Coords)).ToArray();
-            resObj.pd = pd;
-            string message = JsonConvert.SerializeObject(resObj);
-
-            SendMessageToClient((NetworkConnectionToClient)conn, "UPD", message);
-        }
-        else
-        {
-            KillClient((NetworkConnectionToClient)conn, "Connection timed out");
-        }
+        Globals.GetServerLogic().Handle_UPD((NetworkConnectionToClient)conn, token, bounds);
     }
 
     private void Server_WHOAMI(NetworkConnection conn, MessagePacket msg)
@@ -564,35 +333,7 @@ public class NetworkHandler : NetworkManager
         dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
         string token = obj.token;
 
-        if (Globals.GetDatabaseConnector().TokenInUse(token) == 1)
-        {
-            Globals.GetDatabaseConnector().RefreshToken(token);
-
-            long userId = Globals.GetDatabaseConnector().TokenToUserId(token);
-            if (userId >= 0)
-            {
-                UserData ud = Globals.GetDatabaseConnector().GetUserData(userId);
-                if (ud != null)
-                {
-                    dynamic resObj = new ExpandoObject();
-                    resObj.ud = ud;
-                    string message = JsonConvert.SerializeObject(resObj);
-                    SendMessageToClient((NetworkConnectionToClient)conn, "WHOAMI", message);
-                }
-                else
-                {
-                    KillClient((NetworkConnectionToClient)conn, "Server error", token);
-                }
-            }
-            else
-            {
-                KillClient((NetworkConnectionToClient)conn, "Server error");
-            }
-        }
-        else
-        {
-            KillClient((NetworkConnectionToClient)conn, "Connection timed out");
-        }
+        Globals.GetServerLogic().Handle_WHOAMI((NetworkConnectionToClient) conn, token);
     }
 
     private void Server_BUY(NetworkConnection conn, MessagePacket msg)
@@ -601,56 +342,7 @@ public class NetworkHandler : NetworkManager
         string token = obj.token;
         long spotId = obj.spotId;
 
-        if (Globals.GetDatabaseConnector().TokenInUse(token) == 1)
-        {
-            Globals.GetDatabaseConnector().RefreshToken(token);
-
-            long userId = Globals.GetDatabaseConnector().TokenToUserId(token);
-            if (userId >= 0)
-            {
-                PlayerData pd = Globals.GetDatabaseConnector().GetPlayerData(userId);
-                if (pd != null)
-                {
-                    SpotData sd = Globals.GetDatabaseConnector().GetSpot(spotId);
-                    if (sd != null)
-                    {
-                        if (sd.OwnerId != userId)
-                        {
-                            if (Globals.GetDatabaseConnector().ChargePlayer(userId, sd.Value))
-                            {
-                                Globals.GetDatabaseConnector().UpdateSpotOwner(userId, spotId);
-                                SendMessageToClient((NetworkConnectionToClient)conn, "BUY", "{\"success\": true, \"msg\": " + spotId + "}");
-                            }
-                            else
-                            {
-                                SendMessageToClient((NetworkConnectionToClient)conn, "BUY", "{\"success\": false, \"msg\": \"Cannot afford!\"}");
-                            }
-                        }
-                        else
-                        {
-                            SendMessageToClient((NetworkConnectionToClient)conn, "BUY", "{\"success\": false, \"msg\": \"Already owned!\"}");
-                        }
-                    }
-                    else
-                    {
-                        SendMessageToClient((NetworkConnectionToClient)conn, "BUY", "{\"success\": false, \"msg\": \"The spot does not exist!\"}");
-                    }
-                }
-                else
-                {
-                    KillClient((NetworkConnectionToClient)conn, "Server error", token);
-
-                }
-            }
-            else
-            {
-                KillClient((NetworkConnectionToClient)conn, "Server error", token);
-            }
-        }
-        else
-        {
-            KillClient((NetworkConnectionToClient)conn, "Connection timed out");
-        }
+        Globals.GetServerLogic().Handle_BUY((NetworkConnectionToClient)conn, token, spotId);
     }
 
     private void Server_KILL(NetworkConnection conn, MessagePacket msg)
@@ -675,27 +367,7 @@ public class NetworkHandler : NetworkManager
         NetworkServer.RegisterHandler<MessagePacket>(HandleMessageFromClient);
     }
 
-    private string GenerateToken()
-    {
-        string newToken = "";
-        int attempts = 0;
-
-        do
-        {
-            if (attempts > 10)
-            {
-                Globals.GetDatabaseConnector().LogInDatabase("ServerErr", "Token generation failed");
-                return "";
-            }
-
-            newToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Substring(0, 16);
-            attempts++;
-        } while (Globals.GetDatabaseConnector().TokenInUse(newToken) > 0);
-
-        return newToken;
-    }
-
-    private void KillClient(NetworkConnectionToClient conn, string reason, string token = "")
+    public void KillClient(NetworkConnectionToClient conn, string reason, string token = "")
     {
         SendMessageToClient((NetworkConnectionToClient)conn, "KILL", "{\"msg\": \"" + reason + "\"}");
         conn.Disconnect();

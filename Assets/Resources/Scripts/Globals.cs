@@ -78,4 +78,9 @@ public static class Globals
         return GameObject.Find("Logic").GetComponent<ClientLogic>();
 
     }
+
+    public static ServerLogic GetServerLogic()
+    {
+        return GameObject.Find("Logic").GetComponent<ServerLogic>();
+    }
 }
