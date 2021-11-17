@@ -9972,6 +9972,21 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 2027369619}
     m_Modifications:
+    - target: {fileID: 5907771574882852870, guid: 6411ffbab00188347abb81d2cf443814,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5907771574882852870, guid: 6411ffbab00188347abb81d2cf443814,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5907771574882852870, guid: 6411ffbab00188347abb81d2cf443814,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.5
+      objectReference: {fileID: 0}
     - target: {fileID: 6682579818252380680, guid: 6411ffbab00188347abb81d2cf443814,
         type: 3}
       propertyPath: m_RootOrder
@@ -10026,6 +10041,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6903413790677741453, guid: 6411ffbab00188347abb81d2cf443814,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6903413790677741453, guid: 6411ffbab00188347abb81d2cf443814,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6903413790677741453, guid: 6411ffbab00188347abb81d2cf443814,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 8316284896376201388, guid: 6411ffbab00188347abb81d2cf443814,
         type: 3}
@@ -14539,8 +14569,8 @@ MonoBehaviour:
   _numElevationTileFallbackLods: 2
   _requestTilesAroundView: 1
   _center:
-    _latitude: 11
-    _longitude: 22
+    _latitude: 0
+    _longitude: 0
   _zoomLevel: 15
   _minimumZoomLevel: 15
   _maximumZoomLevel: 19
@@ -14613,7 +14643,7 @@ MonoBehaviour:
   Map: {fileID: 2027369625}
   Provider: {fileID: 2027369629}
   UpdateInterval: 1
-  sendInitialUPD: 1
+  SendInitialUPD: 1
 --- !u!114 &2027369629
 MonoBehaviour:
   m_ObjectHideFlags: 0
