@@ -11,7 +11,7 @@ public static class Globals
     public static int IntervalInSeconds_UPD = 10;
     public static int PlayerInitialValue = 1000;
     public static int PlayerBaseIncome = 1;
-    public static string ServerAddress = "localhost";
+    public static string ServerAddress = "192.168.0.129";
     public static ushort NetworkingPort = 7777;
     public static string SqliteConnectionString = "URI=file:" + Application.persistentDataPath + "/database.db";
     public static int SessionTimeoutInHours = 1;

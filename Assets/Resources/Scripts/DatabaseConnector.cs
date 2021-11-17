@@ -68,7 +68,64 @@ public class DatabaseConnector : MonoBehaviour
 
         return result;
     }
+    public int GetLastConnectionId(string token)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
 
+        int connId = -1;
+        try
+        {
+            dbcon.Open();
+
+            string query = $"SELECT LastConnectionId FROM Sessions WHERE Token='{token}'";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            connId = (int)((long)dbcmd.ExecuteScalar());
+        }
+        catch (Exception ex)
+        {
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+        }
+        finally
+        {
+            dbcon.Close();
+        }
+
+        return connId;
+    }
+    public bool SetLastConnectionId(string token, int connId)
+    {
+        if (dbcon == null)
+        {
+            ConnectToDatabase();
+        }
+
+        bool result = true;
+        try
+        {
+            dbcon.Open();
+
+            //Insert new session
+            string query = $"UPDATE Sessions SET LastConnectionId={connId} WHERE Token='{token}'";
+            IDbCommand dbcmd = dbcon.CreateCommand();
+            dbcmd.CommandText = query;
+            dbcmd.ExecuteNonQuery();
+        }
+        catch (Exception ex)
+        {
+            result = false;
+            Globals.GetDebugConsole().LogMessage("EXCEPTION on db connection: " + ex.Message);
+        }
+        finally
+        {
+            dbcon.Close();
+        }
+
+        return result;
+    }
     #endregion
 
     #region Accounts

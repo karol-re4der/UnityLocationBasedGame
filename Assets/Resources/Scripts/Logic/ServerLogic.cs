@@ -79,6 +79,8 @@ public class ServerLogic : MonoBehaviour
                         Globals.GetDatabaseConnector().AssignToken(sessionId, userId);
                         Globals.GetDatabaseConnector().ResetPlayerData(userId);
 
+                        Globals.GetDatabaseConnector().SetLastConnectionId(newToken, conn.connectionId);
+
                         Globals.GetNetworkManager().SendMessageToClient(conn, "REGISTER", "{\"success\": true, \"msg\": \"" + newToken + "\"}");
                     }
                     else
@@ -127,6 +129,18 @@ public class ServerLogic : MonoBehaviour
                     Globals.GetDatabaseConnector().RefreshToken(sessionToken);
                 }
 
+                //Disconnect existing connection
+                int existingConnectionId = Globals.GetDatabaseConnector().GetLastConnectionId(sessionToken);
+                if (existingConnectionId != conn.connectionId)
+                {
+                    NetworkConnectionToClient existingConn = null;
+                    if (NetworkServer.connections.TryGetValue(existingConnectionId, out existingConn))
+                    {
+                        Globals.GetNetworkManager().KillClient(existingConn, "A newer connection detected");
+                    }
+                    Globals.GetDatabaseConnector().SetLastConnectionId(sessionToken, conn.connectionId);
+                }
+
                 Globals.GetNetworkManager().SendMessageToClient(conn, "AUTH", "{\"success\": true, \"msg\": \"" + sessionToken + "\"}");
             }
             else
@@ -145,6 +159,20 @@ public class ServerLogic : MonoBehaviour
         bool result = Globals.GetDatabaseConnector().TokenInUse(token) == 1;
         if (result)
         {
+            //Disconnect existing connection
+            int existingConnectionId = Globals.GetDatabaseConnector().GetLastConnectionId(token);
+            if (existingConnectionId != conn.connectionId)
+            {
+                NetworkConnectionToClient existingConn = null;
+                if (NetworkServer.connections.TryGetValue(existingConnectionId, out existingConn))
+                {
+                    Globals.GetNetworkManager().SendMessageToClient(conn, "CHECK", "{\"success\": false, \"msg\": \"Already connected\"}");
+                    return;
+                }
+            }
+            Globals.GetDatabaseConnector().SetLastConnectionId(token, conn.connectionId);
+
+
             Globals.GetDatabaseConnector().RefreshToken(token);
             Globals.GetNetworkManager().SendMessageToClient(conn, "CHECK", "{\"success\": true}");
         }
