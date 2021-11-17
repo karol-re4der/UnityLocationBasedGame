@@ -140,63 +140,139 @@ public class NetworkHandler : NetworkManager
 
     private void Client_REGISTER(MessagePacket msg)
     {
-        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
-        string message = obj.msg;
-        bool result = obj.success;
+        string message = "";
+        bool result = false;
+
+        try
+        { 
+            dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+            message = obj.msg;
+            result = obj.success;
+        }
+        catch(Exception e)
+        {
+            Globals.GetDebugConsole().LogMessage($"Exception on unpacking {msg.Type}: {e.Message}");
+            return;
+        }
 
         Globals.GetClientLogic().Handle_REGISTER(result, message);
     }
 
     private void Client_AUTH(MessagePacket msg)
     {
-        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
-        string message = obj.msg;
-        bool result = obj.success;
+        string message = "";
+        bool result = false;
+
+        try
+        {
+            dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+            message = obj.msg;
+            result = obj.success;
+        }
+        catch (Exception e)
+        {
+            Globals.GetDebugConsole().LogMessage($"Exception on unpacking {msg.Type}: {e.Message}");
+            return;
+        }
 
         Globals.GetClientLogic().Handle_AUTH(result, message);
     }
 
     private void Client_CHECK(MessagePacket msg)
     {
-        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
-        string message = obj.success ? "" : obj.msg;
-        bool result = obj.success;
+        string message = "";
+        bool result = false;
+
+        try
+        {
+            dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+            message = obj.success ? "" : obj.msg;
+            result = obj.success;
+        }
+        catch (Exception e)
+        {
+            Globals.GetDebugConsole().LogMessage($"Exception on unpacking {msg.Type}: {e.Message}");
+            return;
+        }
 
         Globals.GetClientLogic().Handle_CHECK(result, message);
     }
 
     private void Client_UPD(MessagePacket msg)
     {
-        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
-        List<SpotData> spots = obj.spots.ToObject<List<SpotData>>();
-        List<NonPlayerData> nonPlayers = obj.nonPlayers.ToObject<List<NonPlayerData>>();
-        PlayerData pd = obj.pd.ToObject<PlayerData>();
+        List<SpotData> spots = null;
+        List<NonPlayerData> nonPlayers = null;
+        PlayerData pd = null;
+
+        try
+        {
+            dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+            spots = obj.spots.ToObject<List<SpotData>>();
+            nonPlayers = obj.nonPlayers.ToObject<List<NonPlayerData>>();
+            pd = obj.pd.ToObject<PlayerData>();
+        }
+        catch (Exception e)
+        {
+            Globals.GetDebugConsole().LogMessage($"Exception on unpacking {msg.Type}: {e.Message}");
+            return;
+        }
 
         Globals.GetClientLogic().Handle_UPD(spots, nonPlayers, pd);
     }
 
     private void Client_KILL(MessagePacket msg)
     {
-        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
-        string reason = obj.reason;
+        string reason = "";
+
+        try
+        {
+            dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+            reason = obj.reason;
+        }
+        catch (Exception e)
+        {
+            Globals.GetDebugConsole().LogMessage($"Exception on unpacking {msg.Type}: {e.Message}");
+            return;
+        }
 
         Globals.GetClientLogic().Handle_KILL(reason);
     }
 
     private void Client_BUY(MessagePacket msg)
     {
-        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
-        bool result = obj.success;
-        long spotId = result ? obj.msg : -1;
-        string message = result ? "" : obj.msg;
+        bool result = false;
+        long spotId = -1;
+        string message = "";
+        try
+        {
+            dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+            result = obj.success;
+            spotId = result ? obj.msg : -1;
+            message = result ? "" : obj.msg;
+        }
+        catch (Exception e)
+        {
+            Globals.GetDebugConsole().LogMessage($"Exception on unpacking {msg.Type}: {e.Message}");
+            return;
+        }
 
         Globals.GetClientLogic().Handle_BUY(result, spotId, message);
     }
 
     private void Client_WHOAMI(MessagePacket msg)
     {
-        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
-        UserData ud = obj.ud.ToObject<UserData>();
+        UserData ud = null;
+
+        try
+        {
+            dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+            ud = obj.ud.ToObject<UserData>();
+        }
+        catch (Exception e)
+        {
+            Globals.GetDebugConsole().LogMessage($"Exception on unpacking {msg.Type}: {e.Message}");
+            return;
+        }
 
         Globals.GetClientLogic().Handle_WHOAMI(ud);
     }
@@ -243,7 +319,7 @@ public class NetworkHandler : NetworkManager
 
     public override void OnServerError(NetworkConnection conn, Exception exception)
     {
-        Globals.GetDebugConsole().LogMessage("ServerErr" + exception.Message);
+        Globals.GetDebugConsole().LogMessage("ERR" + exception.Message);
     }
 
     public void HandleMessageFromClient(NetworkConnection conn, MessagePacket msg)
@@ -292,55 +368,128 @@ public class NetworkHandler : NetworkManager
 
     private void Server_REGISTER(NetworkConnection conn, MessagePacket msg)
     {
-        UserData ud = JsonUtility.FromJson<UserData>(msg.Content);
+        UserData ud = null;
+        try
+        {
+            ud = JsonUtility.FromJson<UserData>(msg.Content);
+        }
+        catch (Exception e)
+        {
+            string message = $"Exception on unpacking {msg.Type}: {e.Message}";
+            Globals.GetDebugConsole().LogMessage(message);
+            Globals.GetDatabaseConnector().LogInDatabase("ERR", message);
+            return;
+        }
 
         Globals.GetServerLogic().Handle_REGISTER((NetworkConnectionToClient)conn, ud);
     }
 
     private void Server_AUTH(NetworkConnection conn, MessagePacket msg)
     {
-        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
-        string login = obj.login;
-        string pass = obj.pass;
+        string login = "";
+        string pass = "";
+
+        try
+        {
+            dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+            login = obj.login;
+            pass = obj.pass;
+        }
+        catch (Exception e)
+        {
+            string message = $"Exception on unpacking {msg.Type}: {e.Message}";
+            Globals.GetDebugConsole().LogMessage(message);
+            Globals.GetDatabaseConnector().LogInDatabase("ERR", message);
+            return;
+        }
 
         Globals.GetServerLogic().Handle_AUTH((NetworkConnectionToClient)conn, login, pass);
     }
 
     private void Server_CHECK(NetworkConnection conn, MessagePacket msg)
     {
-        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
-        string token = obj.token;
+        string token = "";
+        try
+        {
+            dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+            token = obj.token;
+        }
+        catch (Exception e)
+        {
+            string message = $"Exception on unpacking {msg.Type}: {e.Message}";
+            Globals.GetDebugConsole().LogMessage(message);
+            Globals.GetDatabaseConnector().LogInDatabase("ERR", message);
+            return;
+        }
 
         Globals.GetServerLogic().Handle_CHECK((NetworkConnectionToClient)conn, token);
     }
 
     private void Server_UPD(NetworkConnection conn, MessagePacket msg)
     {
-        dynamic msgObj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
-        LatLon bottomLeft = new LatLon(msgObj.p1lat, msgObj.p1lon);
-        LatLon topRight = new LatLon(msgObj.p2lat, msgObj.p2lon);
-        string token = msgObj.token;
-        GeoBoundingBoxBuilder growBox = new GeoBoundingBoxBuilder();
-        growBox.Grow(bottomLeft);
-        growBox.Grow(topRight);
-        GeoBoundingBox bounds = growBox.ToGeoBoundingBox();
+        GeoBoundingBox bounds = new GeoBoundingBox();
+        string token = "";
+
+        try
+        {
+            dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+            LatLon bottomLeft = new LatLon(obj.p1lat, obj.p1lon);
+            LatLon topRight = new LatLon(obj.p2lat, obj.p2lon);
+            token = obj.token;
+            GeoBoundingBoxBuilder growBox = new GeoBoundingBoxBuilder();
+            growBox.Grow(bottomLeft);
+            growBox.Grow(topRight);
+            bounds = growBox.ToGeoBoundingBox();
+        }
+        catch (Exception e)
+        {
+            string message = $"Exception on unpacking {msg.Type}: {e.Message}";
+            Globals.GetDebugConsole().LogMessage(message);
+            Globals.GetDatabaseConnector().LogInDatabase("ERR", message);
+            return;
+        }
 
         Globals.GetServerLogic().Handle_UPD((NetworkConnectionToClient)conn, token, bounds);
     }
 
     private void Server_WHOAMI(NetworkConnection conn, MessagePacket msg)
     {
-        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
-        string token = obj.token;
+        string token = "";
+
+        try
+        {
+            dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+            token = obj.token;
+        }
+        catch (Exception e)
+        {
+            string message = $"Exception on unpacking {msg.Type}: {e.Message}";
+            Globals.GetDebugConsole().LogMessage(message);
+            Globals.GetDatabaseConnector().LogInDatabase("ERR", message);
+            return;
+        }
 
         Globals.GetServerLogic().Handle_WHOAMI((NetworkConnectionToClient) conn, token);
     }
 
     private void Server_BUY(NetworkConnection conn, MessagePacket msg)
     {
-        dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
-        string token = obj.token;
-        long spotId = obj.spotId;
+        string token = "";
+        long spotId = -1;
+
+        try
+        {
+            dynamic obj = JsonConvert.DeserializeObject<ExpandoObject>(msg.Content);
+            token = obj.token;
+            spotId = obj.spotId;
+        }
+        catch (Exception e)
+        {
+            string message = $"Exception on unpacking {msg.Type}: {e.Message}";
+            Globals.GetDebugConsole().LogMessage(message);
+            Globals.GetDatabaseConnector().LogInDatabase("ERR", message);
+            return;
+        }
 
         Globals.GetServerLogic().Handle_BUY((NetworkConnectionToClient)conn, token, spotId);
     }
