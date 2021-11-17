@@ -10443,7 +10443,7 @@ MonoBehaviour:
   autoCreatePlayer: 0
   playerSpawnMethod: 0
   spawnPrefabs: []
-  IsHost: 1
+  IsHost: 0
 --- !u!1 &1334977911
 GameObject:
   m_ObjectHideFlags: 0
