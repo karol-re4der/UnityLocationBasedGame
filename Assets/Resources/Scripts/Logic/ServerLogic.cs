@@ -5,6 +5,8 @@ using System;
 using System.Linq;
 using Mirror;
 using Microsoft.Geospatial;
+using System.Security.Cryptography;
+using System.Text;
 
 public class ServerLogic : MonoBehaviour
 {
@@ -63,6 +65,26 @@ public class ServerLogic : MonoBehaviour
         return newToken;
     }
 
+    private string HashPassword(string password)
+    {
+        byte[] tmpSource = ASCIIEncoding.ASCII.GetBytes(password);
+
+        byte[] tmpHash = new SHA512Managed().ComputeHash(tmpSource);
+
+        return ByteArrayToString(tmpHash);
+    }
+
+    private string ByteArrayToString(byte[] arr)
+    {
+        int i;
+        StringBuilder builder = new StringBuilder(arr.Length);
+        for (i = 0; i < arr.Length; i++)
+        {
+            builder.Append(arr[i].ToString("X2"));
+        }
+        return builder.ToString();
+    }
+
     public void Handle_REGISTER(NetworkConnectionToClient conn, UserData ud)
     {
         if (ud.IsComplete())
@@ -74,7 +96,7 @@ public class ServerLogic : MonoBehaviour
                 {
                     if (Globals.GetDatabaseConnector().UserExists(ud) == 0)
                     {
-                        ud.Password = Globals.GetNetworkManager().HashPassword(ud.Password);
+                        ud.Password = HashPassword(ud.Password);
                         long userId = Globals.GetDatabaseConnector().InsertNewUser(ud);
                         long sessionId = Globals.GetDatabaseConnector().AddNewToken(newToken);
                         Globals.GetDatabaseConnector().AssignToken(sessionId, userId);
@@ -110,7 +132,7 @@ public class ServerLogic : MonoBehaviour
         long userId = Globals.GetDatabaseConnector().GetUserId(login);
         if (userId >= 0)
         {
-            if (Globals.GetDatabaseConnector().CheckUserPassword(userId, Globals.GetNetworkManager().HashPassword(pass)))
+            if (Globals.GetDatabaseConnector().CheckUserPassword(userId, HashPassword(pass)))
             {
                 string sessionToken = Globals.GetDatabaseConnector().FindExistingToken(userId);
                 if (String.IsNullOrWhiteSpace(sessionToken) || Globals.GetDatabaseConnector().TokenInUse(sessionToken) != 1)

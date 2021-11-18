@@ -9,8 +9,6 @@ using Newtonsoft.Json;
 using System.Dynamic;
 using Microsoft.Geospatial;
 using Microsoft.Maps.Unity;
-using System.Text;
-using System.Security.Cryptography;
 
 public class NetworkHandler : NetworkManager
 {
@@ -43,44 +41,6 @@ public class NetworkHandler : NetworkManager
     {
 
     }
-
-    #region Crypto
-
-    private string ByteArrayToString(byte[] arr)
-    {
-        int i;
-        StringBuilder builder = new StringBuilder(arr.Length);
-        for (i = 0; i < arr.Length; i++)
-        {
-            builder.Append(arr[i].ToString("X2"));
-        }
-        return builder.ToString();
-    }
-
-    public string HashToString(string hash)
-    {
-        byte[] tmpSource = ASCIIEncoding.ASCII.GetBytes(hash);
-
-        return Convert.ToBase64String(tmpSource);
-    }
-
-    public string StringToHash(string str)
-    {
-        byte[] tmpHash = Convert.FromBase64String(str);
-
-        return ByteArrayToString(tmpHash);
-    }
-
-    public string HashPassword(string password)
-    {
-        byte[] tmpSource = ASCIIEncoding.ASCII.GetBytes(password);
-
-        byte[] tmpHash = new SHA512Managed().ComputeHash(tmpSource);
-
-        return ByteArrayToString(tmpHash);
-    }
-
-    #endregion
 
     #region Client
     public override void OnStartClient()
@@ -137,19 +97,6 @@ public class NetworkHandler : NetworkManager
         //Diagnostics
         string debugText = msg.Type+" from server received. Content: " + msg.Content;
         Globals.GetDebugConsole().LogMessage(debugText);
-
-        //Decrypting
-        try
-        {
-            msg.Type = HashToString(msg.Type);
-            msg.Content = HashToString(msg.Content);
-        }
-        catch (Exception e)
-        {
-            debugText = msg.Type + " from server is invalid. Cannot handle.";
-            Globals.GetDebugConsole().LogMessage(debugText);
-            return;
-        }
 
         //Handling
         switch (msg.Type)
@@ -329,8 +276,8 @@ public class NetworkHandler : NetworkManager
     {
         MessagePacket msg = new MessagePacket
         {
-            Type = StringToHash(type),
-            Content = StringToHash(content)
+            Type = type,
+            Content = content
         };
         NetworkClient.Send(msg, 0);
     }
@@ -376,20 +323,6 @@ public class NetworkHandler : NetworkManager
         string debugText = msg.Type + " message from " + conn.address + " received. Content: " + msg.Content;
         Globals.GetDebugConsole().LogMessage(debugText);
         Globals.GetDatabaseConnector().LogInDatabase("MSG", debugText);
-
-        //Decrypt
-        try
-        {
-            msg.Type = HashToString(msg.Type);
-            msg.Content = HashToString(msg.Content);
-        }
-        catch(Exception e)
-        {
-            debugText = msg.Type + " from " + conn.address + " is invalid. Cannot handle.";
-            Globals.GetDebugConsole().LogMessage(debugText);
-            Globals.GetDatabaseConnector().LogInDatabase("MSG", debugText);
-            return;
-        }
 
         //Handling
         switch (msg.Type)
@@ -565,8 +498,8 @@ public class NetworkHandler : NetworkManager
     {
         MessagePacket msg = new MessagePacket
         {
-            Type = StringToHash(type),
-            Content = StringToHash(text)
+            Type = type,
+            Content = text
         };
 
         conn.Send(msg);
